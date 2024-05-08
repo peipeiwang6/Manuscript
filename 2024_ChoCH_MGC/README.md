@@ -1,2 +1,1 @@
-# Manuscript
-Repository for scripts used for publications
+Scripts for our manuscript: Identification and prediction of across-homeologous-chromosome metabolic gene clusters in Arabidopsis

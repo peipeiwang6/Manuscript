@@ -1,1 +1,1 @@
-Scripts for our manuscript: Identification and prediction of across-homeologous-chromosome metabolic gene clusters in Arabidopsis
+Scripts for our manuscript: The utility of single-cell transcriptome in predicting plant metabolic pathway genes
