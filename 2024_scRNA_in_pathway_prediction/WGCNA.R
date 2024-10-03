@@ -36,7 +36,7 @@ dev.off()
 
 softPower = sft$powerEstimate
 
-TOM = TOMsimilarityFromExpr(dataExpr, power = softPower) ## 用最佳软阈值
+TOM = TOMsimilarityFromExpr(dataExpr, power = softPower)
 
 module = output_name
 cyt = exportNetworkToCytoscape(TOM,
