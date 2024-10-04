@@ -46,7 +46,7 @@ for (i in 1:length(cols)) {
   assign(p, data_change)
 }
 
-p1 <- pAmines.and.Polyamines+pAmino.Acids+pCarbohydrates+pCofactors+pDetoxification+pEnergy.Metabolism+pFatty.Acids.and.Lipids+pHormones+pInorganic.Nutrients+pIntermediate.Metabolism+pNucleotides+pRedox+pSpecialized.Metabolism+pOther+plot_layout(nrow = 7)
+p1 <- pAmines.and.Polyamines+pAmino.Acids+pCarbohydrates+pCofactors+pDetoxification+pEnergy.Metabolism+pFatty.Acids.and.Lipids+pHormones+pInorganic.Nutrients+pIntermediate.Metabolism+pNucleotides+pRedox+pSpecialized.Metabolism+pOthers+plot_layout(nrow = 7)
 print(p1)
 ggsave(p1, filename = paste("Simulation_F1_densityplot_", paste(module, collapse="_"), ".pdf", sep=""), width = 9, height = 12)
 dev.off()
