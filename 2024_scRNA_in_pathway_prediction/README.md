@@ -7,7 +7,7 @@ The Clustering_coefficient folder contains the workflow code for calculating the
 The input data should have samples represented in columns and genes in rows, with the gene column named **Gene**.
 
 To execute this code, please run the following command:
-```python calculate_clustering_coefficient.py input_data.csv```
+```python calculate_clustering_coefficient.py input_data.csv
 
 # 2.Model buliding
 
