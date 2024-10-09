@@ -17,11 +17,11 @@ The Model_buliding folder contains the workflow code for buliding machine learni
 
 ## input files
 * Expression matrix: The expression matrix is in CSV format, where rows represent genes and columns represent samples. The first column must be labeled **"Gene"** and contain the gene names. The file name must **start with** "KNN", "RandomForest", "XGBoost", or "Autogluon" to indicate which model will be trained. The expression matrix will be split into 80% for training and 20% for testing.
-Example file names:
-- `KNN_expression_matrix.csv`
-- `RandomForest_expression_matrix.csv`
-- `XGBoost_expression_matrix.csv`
-+ `Autogluon_expression_matrix.csv`
+    Example file names:
+    * `KNN_expression_matrix.csv`
+    * `RandomForest_expression_matrix.csv`
+    * `XGBoost_expression_matrix.csv`
+    * `Autogluon_expression_matrix.csv`
 * Gene classification: Contains two columns: one for genes and another for their classification information. The first column should match the "Gene" column in the expression matrix.
 * Unknown gene expression matrix: The format of the unknown gene expression matrix is the same as that of the expression matrix.
 
