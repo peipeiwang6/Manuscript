@@ -206,8 +206,11 @@ gene_test_multilabel = pd.merge(gene_test_matrix_df.loc[:,'Gene'], class_csr_mat
 test_multilabel = np.array(gene_test_multilabel[[x for x in list(gene_test_multilabel)[1:]]] == 1)
 X_test, y_test = gene_test_matrix_df.iloc[:, 1:], test_multilabel  
 
+model_files = [d for d in os.listdir(model_folder) if os.path.isdir(os.path.join(model_folder, d))]  
+model_count = len(model_files)
+
 f1_scores = []
-for i in range(0, 100):
+for i in range(model_count):
     model_path = os.path.join(model_folder, f'{i}/')
     predictor = MultilabelPredictor.load(path=model_path)
     y_pred = predictor.predict(X_test)
