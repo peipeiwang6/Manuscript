@@ -13,16 +13,17 @@ python calculate_clustering_coefficient.py input_data.csv
 ```
 
 # 2.Model buliding
-The Model_buliding folder contains the workflow code for buliding machine learning models using K-Nearest Neighbors (KNN), Random Forest (RF), eXtreme Gradient Boosting (XGBoost), and AutoGluon-Tablular (AutoGluon) on an expression matrix. The data is split into 80% for training and 20% for testing. It also includes an R script for generating visualizations of model performance. The models will be saved after training, allowing for future use without retraining. 
+The Model_buliding folder contains the workflow code for buliding machine learning models using K-Nearest Neighbors (KNN), Random Forest (RF), eXtreme Gradient Boosting (XGBoost), and AutoGluon-Tablular (AutoGluon) on an expression matrix. The data is split into 80% for training and 20% for testing. It also includes an R script for generating visualizations of model performance. **No manual execution of R scripts is required**. The models will be saved after training, allowing for future use without retraining. 
 
 ## input files
-* Expression matrix: The expression matrix is in CSV format, where rows represent genes and columns represent samples. The first column must be labeled **"Gene"** and contain the gene names. The file name must **start with** "KNN", "RandomForest", "XGBoost", or "Autogluon" to indicate which model will be trained. The expression matrix will be split into 80% for training and 20% for testing.
+* Expression matrix: The expression matrix is in CSV format stored in the `Data/` folder. Rows represent genes, and columns represent samples. The first column must be labeled **"Gene"** and contain the gene names. The file name must **start with** "KNN", "RandomForest", "XGBoost", or "Autogluon" to indicate which model will be trained.
+    
     Example file names:
-    * `KNN_expression_matrix.csv`
-    * `RandomForest_expression_matrix.csv`
-    * `XGBoost_expression_matrix.csv`
-    * `Autogluon_expression_matrix.csv`
-* Gene classification: Contains two columns: one for genes and another for their classification information. The first column should match the "Gene" column in the expression matrix.
+    - `KNN_expression_matrix.csv`
+    - `RandomForest_expression_matrix.csv`
+    - `XGBoost_expression_matrix.csv`
+    - `Autogluon_expression_matrix.csv`
+* Gene classification: Contains two columns: one for genes and another for their classification information. The first column should match the **"Gene"** column in the expression matrix, and the second column must be named **"classification"**.
 * Unknown gene expression matrix: The format of the unknown gene expression matrix is the same as that of the expression matrix.
 
 ## output files
@@ -40,4 +41,8 @@ python AutoGluon_models.py expression_matrix.csv gene_classification.csv unknown
 ```
 
 # 3. Loading Saved Models
+The loaded model predicts labels for the new test data, and the F1 score is calculated for each model afterward. The pre-trained models are stored in the specified `model_folder` with a `.pkl` extension. To use the code, provide the new test dataset and its corresponding gene classifications (labels), along with the folder containing the saved models.
 
+```bash
+python load_KNN_RF_XGBoost_models.py new_test_data.csv new_test_labels.csv model_folder/
+```
