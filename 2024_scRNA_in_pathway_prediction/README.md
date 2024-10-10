@@ -5,7 +5,10 @@ The Clustering_coefficient folder contains the workflow code for calculating the
 * Ensure the required Python and R packages are installed.
 
 ## input data
-The input data is provided in **CSV format** as a matrix, where each column represents a sample and each row represents a gene. It is essential that the gene column is labeled as **'Gene'**—any other name will not be recognized.
+* Expression matrix: The input expression data is provided in **CSV format** as a matrix, where each column represents a sample and each row represents a gene. It is essential that the gene column is labeled as **'Gene'**—any other name will not be recognized.
+* Gene classification:  Contains two columns: one for genes and another for their classification information. The first column should match the **"Gene"** column in the expression matrix, and the second column must be named **"classification"**. 
+
+*Example data can be found in the folder* [/Example_data_for_clustering_coefficient_calculating](https://github.com/peipeiwang6/Manuscript/tree/main/2024_scRNA_in_pathway_prediction/Example_data_for_clustering_coefficient_calculating).
 
 To execute this code, please run the following command:
 ```bash
@@ -23,14 +26,14 @@ The Model_buliding folder contains the workflow code for buliding machine learni
     - `RandomForest_expression_matrix.csv`
     - `XGBoost_expression_matrix.csv`
     - `Autogluon_expression_matrix.csv`
-* Gene classification: Contains two columns: one for genes and another for their classification information. The first column should match the **"Gene"** column in the expression matrix, and the second column must be named **"classification"**.
+* Gene classification: Contains two columns: one for genes and another for their classification information. The first column should match the **"Gene"** column in the expression matrix, and the second column must be named **"Classification"**. 
 * Unknown gene expression matrix: The format of the unknown gene expression matrix is the same as that of the expression matrix.
 
 ## output files
 * The results will include F1 scores from cross-validation and test sets, F1 scores from random simulations, feature importance rankings, density plots, and predictions for unknown genes.
 * The trained model is saved in the `Result_All/` folder.
 
-*Place the files and codes in their respective folders according to the structure provided in the folder* [/Example_file](https://github.com/peipeiwang6/Manuscript/tree/main/2024_scRNA_in_pathway_prediction/Example_data).
+*Place the files and codes in their respective folders according to the structure provided in the folder* [/Example_files_for_model_building](https://github.com/peipeiwang6/Manuscript/tree/main/2024_scRNA_in_pathway_prediction/Example_data).
 
 Running the KNN, Random Forest, or XGBoost models:
 ```bash
