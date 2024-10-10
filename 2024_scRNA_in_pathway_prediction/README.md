@@ -27,7 +27,7 @@ The Model_buliding folder contains the workflow code for buliding machine learni
 * Unknown gene expression matrix: The format of the unknown gene expression matrix is the same as that of the expression matrix.
 
 ## output files
-* The results (F1 scores on the cross-validation/test, F1 scores from random simulations, feature importances, density plots, unknown gene predictions) will be stored in the `Result_All/` folder.
+* The results will include F1 scores from cross-validation and test sets, F1 scores from random simulations, feature importance rankings, density plots, and predictions for unknown genes.
 * The trained model is saved in the `Result_All/` folder.
 
 *Place the files and codes in their respective folders according to the structure provided in the folder* [/Example_file](https://github.com/peipeiwang6/Manuscript/tree/main/2024_scRNA_in_pathway_prediction/Example_data).
