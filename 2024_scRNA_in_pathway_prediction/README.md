@@ -30,6 +30,8 @@ The Model_buliding folder contains the workflow code for buliding machine learni
 * The results (F1 scores on the cross-validation/test, F1 scores from random simulations, feature importances, density plots, unknown gene predictions) will be stored in the `Result_All/` folder.
 * The trained model is saved in the `Result_All/` folder.
 
+* Place the files and codes in their respective folders according to the structure provided in the folder [/Example_file](https://github.com/peipeiwang6/Manuscript/tree/main/2024_scRNA_in_pathway_prediction/Example_data). *
+
 Running the KNN, Random Forest, or XGBoost models:
 ```bash
 python KNN_RF_XGBoost_models.py expression_matrix.csv gene_classification.csv unknown_gene_expression.csv
