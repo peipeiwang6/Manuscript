@@ -98,5 +98,5 @@ if __name__ == '__main__':
     mission.join()
 
     GeneExpr_density_plot_data(clustering_coefficient_output, density_plot_filename)
-    R_density_plot_script = "Rscript Simulation_C_density_plot_230328.R" + " " + density_plot_filename + " " + GeneExpr_Refer_value + " " + ab_name
+    R_density_plot_script = "Rscript Simulation_C_density_plot.R" + " " + density_plot_filename + " " + GeneExpr_Refer_value + " " + ab_name
     os.system(R_density_plot_script)
