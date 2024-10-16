@@ -1,7 +1,7 @@
 **Scripts for our manuscript: The utility of single-cell RNA sequencing data in predicting plant metabolic pathway genes**
 
 # 1. Clustering coefficient
-The [Clustering_coefficient](https://github.com/peipeiwang6/Manuscript/tree/main/2024_scRNA_in_pathway_prediction/Clustering_coefficient) folder contains the code for calculating the clustering coefficient and background values using a Python script named `calculate_clustering_coefficient.py`. The script calls `WGCNA.R` to generate the input data necessary for calculating the clustering coefficient, and finally calls `Simulation_C_density_plot_230328.R` to visualize the results. **No manual execution of R scripts is required**.
+The [/Clustering_coefficient](https://github.com/peipeiwang6/Manuscript/tree/main/2024_scRNA_in_pathway_prediction/Clustering_coefficient) folder contains the code for calculating the clustering coefficient and background values using a Python script named `calculate_clustering_coefficient.py`. The script calls `WGCNA.R` to generate the input data necessary for calculating the clustering coefficient, and finally calls `Simulation_C_density_plot_230328.R` to visualize the results. **No manual execution of R scripts is required**.
 * Ensure the required Python and R packages are installed.
 
 ## input data
@@ -16,7 +16,7 @@ python calculate_clustering_coefficient.py input_data.csv
 ```
 
 # 2.Model buliding
-The [Model_building](https://github.com/peipeiwang6/Manuscript/tree/main/2024_scRNA_in_pathway_prediction/Model_buliding) folder contains the code for building machine learning models using K-Nearest Neighbors (KNN), Random Forest (RF), eXtreme Gradient Boosting (XGBoost), and AutoGluon-Tablular (AutoGluon) using an expression matrix. The data is split into 80% for training and 20% for testing. The folder also includes an R script for generating visualizations of model performance. **No manual execution of R scripts is required**. The models will be saved after training, allowing for future use without retraining. 
+The [/Model_building](https://github.com/peipeiwang6/Manuscript/tree/main/2024_scRNA_in_pathway_prediction/Model_buliding) folder contains the code for building machine learning models using K-Nearest Neighbors (KNN), Random Forest (RF), eXtreme Gradient Boosting (XGBoost), and AutoGluon-Tablular (AutoGluon) using an expression matrix. The data is split into 80% for training and 20% for testing. The folder also includes an R script for generating visualizations of model performance. **No manual execution of R scripts is required**. The models will be saved after training, allowing for future use without retraining. 
 
 ## input files
 * Expression matrix: the expression matrix is in CSV format stored in the `Data/` folder. Rows represent genes, and columns represent samples. The first column must be labeled **"Gene"** and contain the gene names. The file name must **start with** "KNN", "RandomForest", "XGBoost", or "Autogluon" to indicate which model will be trained.
