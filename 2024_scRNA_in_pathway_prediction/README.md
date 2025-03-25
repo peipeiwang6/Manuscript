@@ -1,4 +1,4 @@
-**Scripts for our manuscript: The utility of single-cell RNA sequencing data in predicting plant metabolic pathway genes**
+**Scripts for our manuscript: Usefulness of scRNA-seq data in predicting plant metabolic pathway genes**
 
 # 1. Clustering coefficient
 The [/Clustering_coefficient](https://github.com/peipeiwang6/Manuscript/tree/main/2024_scRNA_in_pathway_prediction/Clustering_coefficient) folder contains the code for calculating the clustering coefficient and background values using a Python script named `calculate_clustering_coefficient.py`. The script calls `WGCNA.R` to generate the input data necessary for calculating the clustering coefficient, and finally calls `Simulation_C_density_plot_230328.R` to visualize the results. **No manual execution of R scripts is required**.
@@ -16,16 +16,16 @@ python calculate_clustering_coefficient.py input_data.csv
 ```
 
 # 2.Model buliding
-The [/Model_building](https://github.com/peipeiwang6/Manuscript/tree/main/2024_scRNA_in_pathway_prediction/Model_buliding) folder contains the code for building machine learning models using K-Nearest Neighbors (KNN), Random Forest (RF), eXtreme Gradient Boosting (XGBoost), and AutoGluon-Tablular (AutoGluon) using an expression matrix. The data is split into 80% for training and 20% for testing. The folder also includes an R script for generating visualizations of model performance. **No manual execution of R scripts is required**. The models will be saved after training, allowing for future use without retraining. 
+The [/Model_building](https://github.com/peipeiwang6/Manuscript/tree/main/2024_scRNA_in_pathway_prediction/Model_buliding) folder contains the code for building machine learning models using K-Nearest Neighbors (KNN), eXtreme Gradient Boosting (XGBoost), and Random Forest (RF) using an expression matrix. The data is split into 80% for training and 20% for testing. The folder also includes an R script for generating visualizations of model performance. **No manual execution of R scripts is required**. The models will be saved after training, allowing for future use without retraining. 
 
 ## input files
-* Expression matrix: the expression matrix is in CSV format stored in the `Data/` folder. Rows represent genes, and columns represent samples. The first column must be labeled **"Gene"** and contain the gene names. The file name must **start with** "KNN", "RandomForest", "XGBoost", or "Autogluon" to indicate which model will be trained.
+* Expression matrix: the expression matrix is in CSV format stored in the `Data/` folder. Rows represent genes, and columns represent samples. The first column must be labeled **"Gene"** and contain the gene names. The file name must **start with** "KNN",  "XGBoost", or "RandomForest" to indicate which model will be trained.
     
     Example file names:
     - `KNN_expression_matrix.csv`
-    - `RandomForest_expression_matrix.csv`
     - `XGBoost_expression_matrix.csv`
-    - `Autogluon_expression_matrix.csv`
+    - `RandomForest_expression_matrix.csv`
+
 * Gene classification: contains two columns: one for genes and another for their classification information. The first column should match the **"Gene"** column in the expression matrix, and the second column must be named **"Classification"**. 
 * Unknown gene expression matrix: the format of the unknown gene expression matrix is the same as that of the expression matrix.
 
@@ -35,14 +35,9 @@ The [/Model_building](https://github.com/peipeiwang6/Manuscript/tree/main/2024_s
 
 *Place the files and codes in their respective folders according to the structure provided in the folder* [/Example_files_for_model_building](https://github.com/peipeiwang6/Manuscript/tree/main/2024_scRNA_in_pathway_prediction/Example_data).
 
-Running the KNN, Random Forest, or XGBoost models:
+Running the KNN, XGBoost, or Random Forest models:
 ```bash
-python KNN_RF_XGBoost_models.py expression_matrix.csv gene_classification.csv unknown_gene_expression.csv
-```
-
-Running the AutoGluon models:
-```bash
-python AutoGluon_models.py expression_matrix.csv gene_classification.csv unknown_gene_expression.csv
+python KNN_XGBoost_RF_models.py expression_matrix.csv gene_classification.csv unknown_gene_expression.csv
 ```
 
 # 3. Loading the saved models
