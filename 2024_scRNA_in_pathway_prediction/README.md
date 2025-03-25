@@ -1,4 +1,4 @@
-**Scripts for our manuscript: Usefulness of scRNA-seq data in predicting plant metabolic pathway genes**
+## **Scripts for our manuscript: Usefulness of scRNA-seq data in predicting plant metabolic pathway genes**
 
 # 1. Clustering coefficient
 The [/Clustering_coefficient](https://github.com/peipeiwang6/Manuscript/tree/main/2024_scRNA_in_pathway_prediction/Clustering_coefficient) folder contains the code for calculating the clustering coefficient and background values using a Python script named `calculate_clustering_coefficient.py`. The script calls `WGCNA.R` to generate the input data necessary for calculating the clustering coefficient, and finally calls `Simulation_C_density_plot_230328.R` to visualize the results. **No manual execution of R scripts is required**.
