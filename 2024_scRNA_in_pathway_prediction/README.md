@@ -16,12 +16,14 @@ python calculate_clustering_coefficient.py input_data.csv
 ```
 
 # 2.Model buliding
-The [/Model_building](https://github.com/peipeiwang6/Manuscript/tree/main/2024_scRNA_in_pathway_prediction/Model_buliding) folder contains the code for building machine learning models using K-Nearest Neighbors (KNN), eXtreme Gradient Boosting (XGBoost), and Random Forest (RF) using an expression matrix. The data is split into 80% for training and 20% for testing. The folder also includes an R script for generating visualizations of model performance. **No manual execution of R scripts is required**. The models will be saved after training, allowing for future use without retraining. 
+The [/Model_building](https://github.com/peipeiwang6/Manuscript/tree/main/2024_scRNA_in_pathway_prediction/Model_buliding) folder contains the code for building machine learning models using FASTAI, neural network (NN), K-Nearest Neighbors (KNN), eXtreme Gradient Boosting (XGBoost), and Random Forest (RF) using an expression matrix. The data is split into 80% for training and 20% for testing. The folder also includes an R script for generating visualizations of model performance. **No manual execution of R scripts is required**. The models will be saved after training, allowing for future use without retraining. 
 
 ## input files
-* Expression matrix: the expression matrix is in CSV format stored in the `Data/` folder. Rows represent genes, and columns represent samples. The first column must be labeled **"Gene"** and contain the gene names. The file name must **start with** "KNN",  "XGBoost", or "RandomForest" to indicate which model will be trained.
+* Expression matrix: the expression matrix is in CSV format stored in the `Data/` folder. Rows represent genes, and columns represent samples. The first column must be labeled **"Gene"** and contain the gene names. The file name must **start with** "fastai", "NeuralNetwork", "KNN",  "xgboost", or "RandomForest" to indicate which model will be trained.
     
     Example file names:
+    - `fastai_expression_matrix.csv`
+    - `NeuralNetwork_expression_matrix.csv`    
     - `KNN_expression_matrix.csv`
     - `XGBoost_expression_matrix.csv`
     - `RandomForest_expression_matrix.csv`
@@ -35,9 +37,9 @@ The [/Model_building](https://github.com/peipeiwang6/Manuscript/tree/main/2024_s
 
 *Place the files and codes in their respective folders according to the structure provided in the folder* [/Example_files_for_model_building](https://github.com/peipeiwang6/Manuscript/tree/main/2024_scRNA_in_pathway_prediction/Example_data).
 
-Running the KNN, XGBoost, or Random Forest models:
+Running the FASTAI, NN, KNN, XGBoost, or Random Forest models:
 ```bash
-python KNN_XGBoost_RF_models.py expression_matrix.csv gene_classification.csv unknown_gene_expression.csv
+python model_building_code.py expression_matrix.csv gene_classification.csv unknown_gene_expression.csv
 ```
 
 # 3. Loading the saved models
