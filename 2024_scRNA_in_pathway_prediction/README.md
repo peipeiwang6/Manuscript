@@ -16,7 +16,7 @@ python calculate_clustering_coefficient.py input_data.csv
 ```
 
 # 2.Model buliding
-The [/Model_building](https://github.com/peipeiwang6/Manuscript/tree/main/2024_scRNA_in_pathway_prediction/Model_buliding) folder contains the code for building machine learning models using FASTAI, neural network (NN), K-Nearest Neighbors (KNN), eXtreme Gradient Boosting (XGBoost), and Random Forest (RF) using an expression matrix. The data is split into 80% for training and 20% for testing. The folder also includes an R script for generating visualizations of model performance. **No manual execution of R scripts is required**. The models will be saved after training, allowing for future use without retraining. 
+The [/Model_building](https://github.com/peipeiwang6/Manuscript/tree/main/2024_scRNA_in_pathway_prediction/Model_buliding) folder contains the code for building machine learning models based on different algorithms, including FASTAI, neural network (NN), K-Nearest Neighbors (KNN), eXtreme Gradient Boosting (XGBoost), and Random Forest (RF), using a gene expression matrix (`model_building_code.py`). In addition, the models corresponding to these algorithms are also built using AutoGluon based on the code in `AutoGluon_model_building.py`, where the models to be built can be specified and modified using the ‘hyperparameters’ argument. The data is split into 80% for training and 20% for testing. The folder also includes an R script for generating visualizations of model performance. **No manual execution of R scripts is required**. The models will be saved after training, allowing for future use without retraining. 
 
 ## input files
 * Expression matrix: the expression matrix is in CSV format stored in the `Data/` folder. Rows represent genes, and columns represent samples. The first column must be labeled **"Gene"** and contain the gene names. The file name must **start with** "fastai", "NeuralNetwork", "KNN",  "xgboost", or "RandomForest" to indicate which model will be trained.
@@ -46,5 +46,5 @@ python model_building_code.py expression_matrix.csv gene_classification.csv unkn
 The loaded model predicts labels for the new data, and the F1 scores are calculated for each model afterward. The pre-trained models are stored in the specified `model_folder` with a `.pkl` extension. To use the code, please provide the new dataset and its corresponding classifications (labels), along with the folder containing the saved models.
 
 ```bash
-python load_KNN_RF_XGBoost_models.py new_data.csv new_labels.csv model_folder/
+python load_models.py new_data.csv new_labels.csv model_folder/
 ```

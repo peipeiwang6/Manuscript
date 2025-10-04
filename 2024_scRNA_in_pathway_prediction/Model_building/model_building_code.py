@@ -307,7 +307,7 @@ class model_selection():
         mlb = MultiLabelBinarizer()
         train_label_matrix = mlb.fit_transform(gene_train1['Classification'])
         val_label_matrix = mlb.fit_transform(gene_val['Classification'])
-        X_train = train1_df.drop(columns=['Gene','Classification']).values.astype(np.float32) #保证数据格式为numpy
+        X_train = train1_df.drop(columns=['Gene','Classification']).values.astype(np.float32)
         y_train = train_label_matrix    
         X_val = valid_df.drop(columns=['Gene','Classification']).values.astype(np.float32)
         y_val = val_label_matrix
@@ -866,18 +866,98 @@ def F1score_Calculate(gene_class_df, txt, AnyData, raw_name, raw_test, unknown_n
         best_model = model_on.RF_model(X_train, y_train)
         Real_Score('RandomForest', gene_train_matrix_df, class_csr_matrix_df, best_model, txt, gene_test_matrix_df, train_label, test_label, unknown_gene_exp)
         Bg_value('RandomForest', gene_train_matrix_df, gene_test_matrix_df, class_csr_matrix_df, best_model, txt, train_label, test_label)
+        Real_name = "KNN_Real_Score_train_" + txt
+        Test_name = "KNN_Real_Score_test_" + txt
+        Global_real_train = "KNN_Overall_Score_train_" + txt
+        Global_real_test = "KNN_Overall_Score_test_" + txt
+        Bg_name_train = "KNN_Bg_train_" + txt
+        Bg_name_test = "KNN_Bg_test_" + txt
+        Global_Bg_train = 'KNN_Overall_Bg_train_' + txt
+        Global_Bg_test = 'KNN_Overall_Bg_test_' + txt
+        outPut_train_name = 'train_' + txt.split('.')[0]
+        outPut_test_name = 'test_' + txt.split('.')[0]
+        Global_outPut_train = 'Global_train_' + txt.split('.')[0]
+        Global_outPut_test = 'Global_test_' + txt.split('.')[0]
+        R_density_plot_script_train = "Rscript Simulation_F1_density_plot.R" + " " + Bg_name_train + " " + Real_name + " " + outPut_train_name
+        os.system(R_density_plot_script_train)
+        R_density_plot_script_test = "Rscript Simulation_F1_density_plot.R" + " " + Bg_name_test + " " + Test_name + " " + outPut_test_name
+        os.system(R_density_plot_script_test)
+        R_density_plot_overall_train = "Rscript Overall_F1_density_plot.R" + " " + Global_Bg_train + " " + Global_real_train + " " + Global_outPut_train
+        os.system(R_density_plot_overall_train)
+        R_density_plot_overall_test = "Rscript Overall_F1_density_plot.R" + " " + Global_Bg_test + " " + Global_real_test + " " + Global_outPut_test
+        os.system(R_density_plot_overall_test)    
     if 'xgboost' in txt:
         best_model = model_on.XGboost(X_train, y_train)
         Real_Score('xgboost', gene_train_matrix_df, class_csr_matrix_df, best_model, txt, gene_test_matrix_df, train_label, test_label, unknown_gene_exp)
         Bg_value('xgboost', gene_train_matrix_df, gene_test_matrix_df, class_csr_matrix_df, best_model, txt, train_label, test_label)
+        Real_name = "xgboost_Real_Score_train_" + txt
+        Test_name = "xgboost_Real_Score_test_" + txt
+        Global_real_train = "xgboost_Overall_Score_train_" + txt
+        Global_real_test = "xgboost_Overall_Score_test_" + txt
+        Bg_name_train = "xgboost_Bg_train_" + txt
+        Bg_name_test = "xgboost_Bg_test_" + txt
+        Global_Bg_train = 'xgboost_Overall_Bg_train_' + txt
+        Global_Bg_test = 'xgboost_Overall_Bg_test_' + txt
+        outPut_train_name = 'train_' + txt.split('.')[0]
+        outPut_test_name = 'test_' + txt.split('.')[0]
+        Global_outPut_train = 'Global_train_' + txt.split('.')[0]
+        Global_outPut_test = 'Global_test_' + txt.split('.')[0]
+        R_density_plot_script_train = "Rscript Simulation_F1_density_plot.R" + " " + Bg_name_train + " " + Real_name + " " + outPut_train_name
+        os.system(R_density_plot_script_train)
+        R_density_plot_script_test = "Rscript Simulation_F1_density_plot.R" + " " + Bg_name_test + " " + Test_name + " " + outPut_test_name
+        os.system(R_density_plot_script_test)
+        R_density_plot_overall_train = "Rscript Overall_F1_density_plot.R" + " " + Global_Bg_train + " " + Global_real_train + " " + Global_outPut_train
+        os.system(R_density_plot_overall_train)
+        R_density_plot_overall_test = "Rscript Overall_F1_density_plot.R" + " " + Global_Bg_test + " " + Global_real_test + " " + Global_outPut_test
+        os.system(R_density_plot_overall_test)
     if 'fastai' in txt:
         best_model = model_on.fastai_model(train1_df, valid_df)
         Real_Score('fastai', gene_train_matrix_df, class_csr_matrix_df, best_model, txt, gene_test_matrix_df, train_label, test_label, unknown_gene_exp)
         Bg_value('fastai', gene_train_matrix_df, gene_test_matrix_df, class_csr_matrix_df, best_model, txt, train_label, test_label)
+        Real_name = "fastai_Real_Score_train_" + txt
+        Test_name = "fastai_Real_Score_test_" + txt
+        Global_real_train = "fastai_Overall_Score_train_" + txt
+        Global_real_test = "fastai_Overall_Score_test_" + txt
+        Bg_name_train = "fastai_Bg_train_" + txt
+        Bg_name_test = "fastai_Bg_test_" + txt
+        Global_Bg_train = 'fastai_Overall_Bg_train_' + txt
+        Global_Bg_test = 'fastai_Overall_Bg_test_' + txt
+        outPut_train_name = 'train_' + txt.split('.')[0]
+        outPut_test_name = 'test_' + txt.split('.')[0]
+        Global_outPut_train = 'Global_train_' + txt.split('.')[0]
+        Global_outPut_test = 'Global_test_' + txt.split('.')[0]
+        R_density_plot_script_train = "Rscript Simulation_F1_density_plot.R" + " " + Bg_name_train + " " + Real_name + " " + outPut_train_name
+        os.system(R_density_plot_script_train)
+        R_density_plot_script_test = "Rscript Simulation_F1_density_plot.R" + " " + Bg_name_test + " " + Test_name + " " + outPut_test_name
+        os.system(R_density_plot_script_test)
+        R_density_plot_overall_train = "Rscript Overall_F1_density_plot.R" + " " + Global_Bg_train + " " + Global_real_train + " " + Global_outPut_train
+        os.system(R_density_plot_overall_train)
+        R_density_plot_overall_test = "Rscript Overall_F1_density_plot.R" + " " + Global_Bg_test + " " + Global_real_test + " " + Global_outPut_test
+        os.system(R_density_plot_overall_test)
     if 'NeuralNetwork' in txt:
         best_model = model_on.NN_model(train1_df, valid_df, gene_train1, gene_val)
         Real_Score('NeuralNetwork', gene_train_matrix_df, class_csr_matrix_df, best_model, txt, gene_test_matrix_df, train_label, test_label, unknown_gene_exp)
         Bg_value('NeuralNetwork', gene_train_matrix_df, gene_test_matrix_df, class_csr_matrix_df, best_model, txt, train_label, test_label)
+        Real_name = "NeuralNetwork_Real_Score_train_" + txt
+        Test_name = "NeuralNetwork_Real_Score_test_" + txt
+        Global_real_train = "NeuralNetwork_Overall_Score_train_" + txt
+        Global_real_test = "NeuralNetwork_Overall_Score_test_" + txt
+        Bg_name_train = "NeuralNetwork_Bg_train_" + txt
+        Bg_name_test = "NeuralNetwork_Bg_test_" + txt
+        Global_Bg_train = 'NeuralNetwork_Overall_Bg_train_' + txt
+        Global_Bg_test = 'NeuralNetwork_Overall_Bg_test_' + txt
+        outPut_train_name = 'train_' + txt.split('.')[0]
+        outPut_test_name = 'test_' + txt.split('.')[0]
+        Global_outPut_train = 'Global_train_' + txt.split('.')[0]
+        Global_outPut_test = 'Global_test_' + txt.split('.')[0]
+        R_density_plot_script_train = "Rscript Simulation_F1_density_plot.R" + " " + Bg_name_train + " " + Real_name + " " + outPut_train_name
+        os.system(R_density_plot_script_train)
+        R_density_plot_script_test = "Rscript Simulation_F1_density_plot.R" + " " + Bg_name_test + " " + Test_name + " " + outPut_test_name
+        os.system(R_density_plot_script_test)
+        R_density_plot_overall_train = "Rscript Overall_F1_density_plot.R" + " " + Global_Bg_train + " " + Global_real_train + " " + Global_outPut_train
+        os.system(R_density_plot_overall_train)
+        R_density_plot_overall_test = "Rscript Overall_F1_density_plot.R" + " " + Global_Bg_test + " " + Global_real_test + " " + Global_outPut_test
+        os.system(R_density_plot_overall_test)
     if 'Autogluon' in txt:
         pass
     Real_name = "Real_Score_train_" + txt
