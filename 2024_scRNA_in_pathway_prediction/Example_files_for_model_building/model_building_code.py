@@ -564,7 +564,12 @@ def Real_Score(module, gene_train_matrix_df, class_csr_matrix_df, best_model, tx
     df_t = df.T
     df_t2 = df_t.reset_index(drop = True)
     df_t2.columns = [f'Rep{i+1}' for i in range(10)]
-    pd.concat([label, df_t2, mean, std], axis=1).to_csv(Real_train_name, index=False)
+    if module in ['fastai', 'NeuralNetwork']:
+        new_col = ['Amines and Polyamines', 'Amino Acids', 'Carbohydrates', 'Cofactors', 'Detoxification', 'Energy Metabolism', 'Fatty Acids and Lipids', 'Hormones', 'Inorganic Nutrients', 'Intermediate Metabolism', 'Nucleotides', 'Other', 'Redox', 'Specialized Metabolism']
+        df_t2.insert(0, 'Classification', new_col)
+        pd.concat([df_t2, mean, std], axis=1).to_csv(Real_train_name, index=False)
+    else:
+        pd.concat([label, df_t2, mean, std], axis=1).to_csv(Real_train_name, index=False)
     overall_train_df = pd.DataFrame(global_train, columns=["Global_F1_Score"])
     overall_train_df.to_csv(Global_train_name, index = False)
 
@@ -578,7 +583,12 @@ def Real_Score(module, gene_train_matrix_df, class_csr_matrix_df, best_model, tx
     test_df_t = test_df.T
     test_df_t2 = test_df_t.reset_index(drop=True)
     test_df_t2.columns = [f'Rep{i+1}' for i in range(10)]
-    pd.concat([test_label, test_df_t2, test_mean, test_std], axis=1).to_csv(Real_test_name, index=False)
+    if module in ['fastai', 'NeuralNetwork']:
+        new_col = ['Amines and Polyamines', 'Amino Acids', 'Carbohydrates', 'Cofactors', 'Detoxification', 'Energy Metabolism', 'Fatty Acids and Lipids', 'Hormones', 'Inorganic Nutrients', 'Intermediate Metabolism', 'Nucleotides', 'Other', 'Redox', 'Specialized Metabolism']
+        test_df_t2.insert(0, 'Classification', new_col)
+        pd.concat([test_df_t2, mean, std], axis=1).to_csv(Real_test_name, index=False)
+    else:
+        pd.concat([test_label, test_df_t2, test_mean, test_std], axis=1).to_csv(Real_test_name, index=False)
     overall_test_df = pd.DataFrame(global_test, columns=["Global_F1_Score"])
     overall_test_df.to_csv(Global_test_name, index = False)
 
@@ -791,12 +801,18 @@ def Bg_value(module, gene_train_matrix_df, gene_test_matrix_df, class_csr_matrix
 
     train_Bg_df = pd.DataFrame(train_Bg)
     train_Bg_df.columns = list(gene_train_multilabel)[1:]
+    if module in ['fastai', 'NeuralNetwork']:
+        new_col =  ['Amines and Polyamines', 'Amino Acids', 'Carbohydrates', 'Cofactors', 'Detoxification', 'Energy Metabolism', 'Fatty Acids and Lipids', 'Hormones', 'Inorganic Nutrients', 'Intermediate Metabolism', 'Nucleotides', 'Other', 'Redox', 'Specialized Metabolism']
+        train_Bg_df.columns = new_col
     train_Bg_df.to_csv(trian_bg_name, index=False)
     overall_bg_train_df = pd.DataFrame(global_train_bg, columns=["Global_F1_Score"])
     overall_bg_train_df.to_csv(Global_Bg_train, index = False)
 
     test_Bg_df = pd.DataFrame(test_Bg)
     test_Bg_df.columns = list(gene_test_multilabel)[1:]
+    if module in ['fastai', 'NeuralNetwork']:
+        new_col =  ['Amines and Polyamines', 'Amino Acids', 'Carbohydrates', 'Cofactors', 'Detoxification', 'Energy Metabolism', 'Fatty Acids and Lipids', 'Hormones', 'Inorganic Nutrients', 'Intermediate Metabolism', 'Nucleotides', 'Other', 'Redox', 'Specialized Metabolism']
+        test_Bg_df.columns = new_col
     test_Bg_df.to_csv(test_bg_name, index=False)
     overall_bg_test_df = pd.DataFrame(global_test_bg, columns=["Global_F1_Score"])
     overall_bg_test_df.to_csv(Global_Bg_test, index = False)
