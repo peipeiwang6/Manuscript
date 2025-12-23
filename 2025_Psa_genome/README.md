@@ -11,7 +11,7 @@
 ## get allelic genes in syntenic, inversion, translocation and duplication regions, based on Syri information
 02_get_genes_in_syntenic_inversion_translocation_regions_based_on_syri.py
 
-## infer allelic genes based on Syri and GFF information first, than fill out missing genes using McScanX information
+## infer allelic genes based on Syri and GFF information first, then fill out missing genes using McScanX information
 03_get_allelic_genes_based_on_GFF_Syri_McScanX_Tandem.py
 
 ## get reciprocal best blast hits for genes between set3 and set4 chromosomes
