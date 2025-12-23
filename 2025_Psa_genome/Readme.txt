@@ -25,7 +25,7 @@
 # calculate Ka and Ks between reciprocal best matched gene pairs between set3 and set4, and within set3 and set4
 06_KaKs_for_RBM.py
 
-# convert protein alignment to CDS alignment, this script is used when calculate the Ka and Ks values
+# convert protein alignment to CDS alignment, this script is used when calculating the Ka and Ks values
 07_convert_pep_alignment_to_CDS_alignment.py
 
 # calculate Ka and Ks for syntenic and non-syntenic gene pairs
