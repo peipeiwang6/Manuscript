@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import pickle
 
-syntenic = pd.read_csv('Psa_syntenic_genes.txt',header=None, sep='\t')
+syntenic = pd.read_csv('Psa_syntenic_genes.txt',header=None, sep='\t')  # results from 02_get_genes_in_syntenic_inversion_translocation_regions_based_on_syri.py
 syntenic[2] = 'SYNAL'
 Syrigenes = syntenic
 Syrigenes = Syrigenes.drop_duplicates()
@@ -215,7 +215,7 @@ res.to_csv('Psa_Syri_allelic_genes_based_on_GFF_20250324.txt',header=True, index
 
 # fill out missing allelic genes using McScanX
 
-McScanX = pd.read_csv('Psa_Collinear_blocks.txt',header=0, sep='\t',low_memory=False)
+McScanX = pd.read_csv('Psa_Collinear_blocks.txt',header=0, sep='\t',low_memory=False) # results from 01_parse_McScanX_and_tandem_information.py
 McScanX = McScanX[McScanX['Type'] == 'allelic_chr']
 McScanX['Chr'] = McScanX['Gene1'].str[4:6:]
 McScanX = McScanX.drop('Type', axis=1)
@@ -365,7 +365,7 @@ Final_save.to_csv('Psa_syri_allelic_fillout_using_McScanX_20250325.txt',header=T
 
 # fillout allelic genes in inversion
 # add allelic genes in inversion information
-inverse = pd.read_csv('../06_collinear_analysis/Psa_inversed_genes.txt',header=None, sep='\t')
+inverse = pd.read_csv('../06_collinear_analysis/Psa_inversed_genes.txt',header=None, sep='\t') # results from 02_get_genes_in_syntenic_inversion_translocation_regions_based_on_syri.py
 inverse['Align_ID'] = 'INVAL'
 inverse['Chr'] = inverse[0].str[4:6:]
 inverse = inverse.loc[:,['Align_ID', 0, 1, 'Chr']]
@@ -508,7 +508,7 @@ def get_all_genes(List):
 	uniquegenes = sorted(list(set(genes)))
 	return(uniquegenes)
 
-with open('Psa_tandem_genes.pkl', 'rb') as f1:
+with open('Psa_tandem_genes.pkl', 'rb') as f1:  # results from 01_parse_McScanX_and_tandem_information.py
 	Tandem = pickle.load(f1)
 
 def Get_tandem_duplicates(genes):
@@ -611,7 +611,7 @@ counts_ab.to_csv('Psa_allelic_genes_final_types_counts_20250328_higher_level.txt
 
 
 # functional annotation
-Blast = pd.read_csv('Psa_Vs_Psa_top_non-self_blast_hit.txt', header=None, sep='\t')
+Blast = pd.read_csv('Psa_Vs_Psa_top_non-self_blast_hit.txt', header=None, sep='\t')  # results from 00_parse_Psa_allbyall_blast_results.py
 D_Blast = {}
 for i in range(0, Blast.shape[0]):
 	if Blast.iloc[i,0] not in D_Blast:

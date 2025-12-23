@@ -2,6 +2,42 @@ import sys,os
 import pandas as pd
 import numpy as np
 import pickle
+
+pep = open('/public/home/wangpeipei/08_Psa_genome_annotation_v2_20250114/Psa_longest_pep_20250114.fa','r').readlines()
+Pep = {}
+i = 0
+while i < len(pep):
+	inl = pep[i].strip()
+	if inl.startswith('>'):
+		Pep[inl[1:]] = pep[i + 1].strip()
+		i += 1
+	i += 1
+
+cds = open('/public/home/wangpeipei/08_Psa_genome_annotation_v2_20250114/Psa_CDS_20250113.fa','r').readlines()
+CDS = {}
+i = 0
+while i < len(cds):
+	inl = cds[i].strip()
+	if inl.startswith('>'):
+		if inl[1:] in Pep:
+			CDS[inl[1:]] = cds[i + 1].strip()
+			i += 1
+			i += 1
+			while not cds[i].startswith('>'):
+				CDS[inl[1:]] = CDS[inl[1:]] + cds[i].strip()
+				i += 1
+			i = i - 1
+	i += 1
+
+f = open("Psa_representative_pep.pkl","wb")
+pickle.dump(Pep,f)
+f.close()
+
+f = open("Psa_representative_cds.pkl","wb")
+pickle.dump(CDS,f)
+f.close()
+
+
 with open('Psa_representative_pep.pkl', 'rb') as f1:
 	Pep = pickle.load(f1)
 
@@ -34,7 +70,7 @@ for i in range(0, RBM.shape[0]):
 	for file in os.listdir(path):
 		if file.endswith('_pep.fas'):
 			os.system('/public/home/likangli/miniforge3/envs/mafft/bin/mafft --anysymbol --maxiterate 1000 --localpair %s/%s > %s/%s_aligned.fas'%(path, file, path, file.split('.fas')[0]))
-			os.system('python 13_convert_pep_alignment_to_CDS_alignment.py %s/%s_pep_aligned.fas %s/%s_cds.fas'%(path, file.split('_pep.fas')[0], path, file.split('_pep.fas')[0]))
+			os.system('python 07_convert_pep_alignment_to_CDS_alignment.py %s/%s_pep_aligned.fas %s/%s_cds.fas'%(path, file.split('_pep.fas')[0], path, file.split('_pep.fas')[0]))
 			os.system('cp /public/home/wangpeipei/Software/PAML/paml4.9j/yn00.ctl %s'%path)
 			os.system('awk \'{gsub(\"examples/abglobin.nuc\",\"%s/%s_cds_aligned.fas\",$0); print $0}\' %s/yn00.ctl > %s/yn00.ctl_tem'%(path, file.split('_pep.fas')[0], path, path))
 			os.system('awk \'{gsub(\"= yn\",\"= %s/%s_raml.out\",$0); print $0}\' %s/yn00.ctl_tem > %s/yn00.ctl'%(path, file.split('_pep.fas')[0], path, path))
@@ -57,7 +93,7 @@ for i in range(0, RBM.shape[0]):
 	for file in os.listdir(path):
 		if file.endswith('_pep.fas'):
 			os.system('/public/home/likangli/miniforge3/envs/mafft/bin/mafft --anysymbol --maxiterate 1000 --localpair %s/%s > %s/%s_aligned.fas'%(path, file, path, file.split('.fas')[0]))
-			os.system('python 13_convert_pep_alignment_to_CDS_alignment.py %s/%s_pep_aligned.fas %s/%s_cds.fas'%(path, file.split('_pep.fas')[0], path, file.split('_pep.fas')[0]))
+			os.system('python 07_convert_pep_alignment_to_CDS_alignment.py %s/%s_pep_aligned.fas %s/%s_cds.fas'%(path, file.split('_pep.fas')[0], path, file.split('_pep.fas')[0]))
 			os.system('cp /public/home/wangpeipei/Software/PAML/paml4.9j/yn00.ctl %s'%path)
 			os.system('awk \'{gsub(\"examples/abglobin.nuc\",\"%s/%s_cds_aligned.fas\",$0); print $0}\' %s/yn00.ctl > %s/yn00.ctl_tem'%(path, file.split('_pep.fas')[0], path, path))
 			os.system('awk \'{gsub(\"= yn\",\"= %s/%s_raml.out\",$0); print $0}\' %s/yn00.ctl_tem > %s/yn00.ctl'%(path, file.split('_pep.fas')[0], path, path))
@@ -80,7 +116,7 @@ for i in range(0, RBM.shape[0]):
 	for file in os.listdir(path):
 		if file.endswith('_pep.fas'):
 			os.system('/public/home/likangli/miniforge3/envs/mafft/bin/mafft --anysymbol --maxiterate 1000 --localpair %s/%s > %s/%s_aligned.fas'%(path, file, path, file.split('.fas')[0]))
-			os.system('python 13_convert_pep_alignment_to_CDS_alignment.py %s/%s_pep_aligned.fas %s/%s_cds.fas'%(path, file.split('_pep.fas')[0], path, file.split('_pep.fas')[0]))
+			os.system('python 07_convert_pep_alignment_to_CDS_alignment.py %s/%s_pep_aligned.fas %s/%s_cds.fas'%(path, file.split('_pep.fas')[0], path, file.split('_pep.fas')[0]))
 			os.system('cp /public/home/wangpeipei/Software/PAML/paml4.9j/yn00.ctl %s'%path)
 			os.system('awk \'{gsub(\"examples/abglobin.nuc\",\"%s/%s_cds_aligned.fas\",$0); print $0}\' %s/yn00.ctl > %s/yn00.ctl_tem'%(path, file.split('_pep.fas')[0], path, path))
 			os.system('awk \'{gsub(\"= yn\",\"= %s/%s_raml.out\",$0); print $0}\' %s/yn00.ctl_tem > %s/yn00.ctl'%(path, file.split('_pep.fas')[0], path, path))
