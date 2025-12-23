@@ -1,5 +1,5 @@
 ##########################################################################################
-# Scripts for allelic group classification, and Ka and Ks calculation for syntenic and reciprocal best matched gene pairs                       #
+## Scripts for allelic group classification, and Ka and Ks calculation for syntenic and reciprocal best matched gene pairs
 Peipei Wang, 20250231
 ##########################################################################################
 
