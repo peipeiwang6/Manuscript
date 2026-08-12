@@ -1,10 +1,17 @@
 #!/usr/bin/env python3
 """
-simulate_rnaseq.py - Simulate RNA-seq with expression distribution matching real data.
+01_simulate_rnaseq.py - Simulate RNA-seq with expression distribution matching real data.
+
+Expression distribution:
+    The log10(TPM+1) values of genes follow a probability density proportional to:
+        f(x) = x^A1 + C1 * exp( -(x - mean1)^2 / (2 * sigma1^2) )
+    where x = log10(TPM+1), with parameters:
+        A1 = -0.2315, C1 = 1.1590, mean1 = 1.2269, sigma1 = 0.7880.
+    This ensures that the log10(frequency) of the histogram (bin width 0.01)
+    matches the given mixed power-law plus Gaussian shape.
+
 Usage:
-    python simulate_rnaseq.py -g genome.fa -t annotation.gff -o outdir
-Distribution: log10(TPM+1) ~ x^A1 + C1*exp(-(x-mean1)^2/(2*sigma1^2))
-Parameters: A1=-0.2315, C1=1.1590, mean1=1.2269, sigma1=0.7880
+    python 01_simulate_rnaseq.py -g genome.fa -t annotation.gff -o outdir
 """
 
 import argparse
