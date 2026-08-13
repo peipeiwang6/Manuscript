@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-01_simulate_rnaseq.py - Simulate RNA-seq with expression distribution matching real data.
+01_simulate_rnaseq.py - Simulate paired-end RNA-seq (150 bp) with 60 Gb total output.
 
 Expression distribution:
     The log10(TPM+1) values of genes follow a probability density proportional to:
@@ -38,9 +38,9 @@ def write_fastq_pair(fq1, fq2, read_id, seq1, seq2, qual):
 
 def parse_gff(gff_file, genome, gene_type="gene", transcript_type="mRNA", feature_type="exon"):
     """
-    Parse a GFF file and build a hierarchical structure: gene -> transcript -> exons/CDS.
-    Uses the specified feature_type (default: exon) to define transcript parts.
-    Returns a dict: gene_id -> {seq, length, tx_id}
+    Parse a GFF file and build gene -> transcript -> parts (exons by default).
+    Selects the longest transcript per gene based on total length of parts.
+    Returns dict: gene_id -> {seq, length, tx_id}
     """
     gene_children = defaultdict(list)       # gene_id -> list of transcript ids
     transcript_children = defaultdict(list) # transcript_id -> list of (chrom, start, end, strand)
@@ -73,8 +73,6 @@ def parse_gff(gff_file, genome, gene_type="gene", transcript_type="mRNA", featur
                                        'strand': strand, 'parent': parent}
                     gene_children[parent].append(tx_id)
             elif ftype == feature_type:
-                # If feature_type is 'exon', this collects all exons (including UTRs).
-                # If feature_type is 'CDS', it collects only coding sequences.
                 parent = attr_dict.get('Parent')
                 if parent:
                     transcript_children[parent].append((chrom, start, end, strand))
@@ -114,10 +112,12 @@ def parse_gff(gff_file, genome, gene_type="gene", transcript_type="mRNA", featur
     return gene_info
 
 
-def generate_expression_mixed_power_gaussian(n, A1, C1, mean1, sigma1, x_min=1e-6, x_max=10.0, seed=None):
+def generate_expression_mixed_power_gaussian(n, A1, C1, mean1, sigma1, x_min=1e-12, x_max=10.0, seed=None):
     """
-    Generate n log10(TPM+1) values from a mixed distribution (power-law decay + Gaussian peak).
-    Uses rejection sampling.
+    Generate n values of log10(TPM+1) from the mixed distribution:
+        f(x) = x^A1 + C1 * exp( -(x-mean1)^2 / (2*sigma1^2) )
+    using rejection sampling.
+    The lower bound x_min is set very close to 0 to capture the singularity at x=0.
     """
     if seed is not None:
         np.random.seed(seed)
@@ -125,20 +125,8 @@ def generate_expression_mixed_power_gaussian(n, A1, C1, mean1, sigma1, x_min=1e-
     def f(x):
         return x ** A1 + C1 * np.exp(-(x - mean1) ** 2 / (2 * sigma1 ** 2))
 
-    # Determine effective upper bound
-    x_vals = np.linspace(x_min, x_max, 1000)
-    f_vals = f(x_vals)
-    max_f = np.max(f_vals)
-    cutoff = None
-    for xv, fv in zip(x_vals, f_vals):
-        if fv < max_f * 1e-6:
-            cutoff = xv
-            break
-    if cutoff is not None and cutoff < x_max:
-        x_max = cutoff
-        x_vals = np.linspace(x_min, x_max, 2000)
-        f_vals = f(x_vals)
-        max_f = np.max(f_vals)
+    # Since f(x) diverges as x -> 0, we set max_f = f(x_min) (which is huge but finite)
+    max_f = f(x_min)
 
     samples = []
     n_accepted = 0
@@ -246,7 +234,7 @@ def main():
     print(f"   Used gene length file: {length_file_used}")
 
     # ------------------------------------------------------------
-    # 3. Generate expression: log10(TPM+1) ~ mixed distribution (power + gaussian)
+    # 3. Generate expression: log10(TPM+1) from mixed distribution
     # ------------------------------------------------------------
     print("[3] Generating gene expression (log10(TPM+1) from mixed distribution)...")
     log10_tpm1 = generate_expression_mixed_power_gaussian(
