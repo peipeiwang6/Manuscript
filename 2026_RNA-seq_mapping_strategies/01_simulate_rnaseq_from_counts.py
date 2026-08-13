@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
 """
-01_simulate_rnaseq.py - Simulate paired-end RNA-seq (150 bp) with 60 Gb total output.
-
-Expression distribution:
-    The log10(TPM+1) values of genes follow a probability density proportional to:
-        f(x) = x^A1 + C1 * exp( -(x - mean1)^2 / (2 * sigma1^2) )
-    where x = log10(TPM+1), with parameters:
-        A1 = -0.2315, C1 = 1.1590, mean1 = 1.2269, sigma1 = 0.7880.
-    This ensures that the log10(frequency) of the histogram (bin width 0.01)
-    matches the given mixed power-law plus Gaussian shape.
+01_simulate_rnaseq_from_counts.py - Simulate paired-end RNA-seq reads based on real read counts.
 
 Usage:
-    python 01_simulate_rnaseq.py -g genome.fa -t annotation.gff -o outdir
+    python 01_simulate_rnaseq_from_counts.py -g genome.fa -t annotation.gff -c counts.tsv -o outdir
+
+Input count file format (tab-separated, no header):
+    gene_id    count
+
+The script extracts the longest transcript for each gene from the GFF,
+then generates exactly the specified number of read pairs for that gene.
 """
 
 import argparse
@@ -112,57 +110,44 @@ def parse_gff(gff_file, genome, gene_type="gene", transcript_type="mRNA", featur
     return gene_info
 
 
-def generate_expression_mixed_power_gaussian(n, A1, C1, mean1, sigma1, x_min=1e-12, x_max=10.0, seed=None):
+def read_counts_file(counts_file):
     """
-    Generate n values of log10(TPM+1) from the mixed distribution:
-        f(x) = x^A1 + C1 * exp( -(x-mean1)^2 / (2*sigma1^2) )
-    using rejection sampling.
-    The lower bound x_min is set very close to 0 to capture the singularity at x=0.
+    Read a two-column TSV file: gene_id, count.
+    Returns a dict {gene_id: count}.
     """
-    if seed is not None:
-        np.random.seed(seed)
-
-    def f(x):
-        return x ** A1 + C1 * np.exp(-(x - mean1) ** 2 / (2 * sigma1 ** 2))
-
-    # Since f(x) diverges as x -> 0, we set max_f = f(x_min) (which is huge but finite)
-    max_f = f(x_min)
-
-    samples = []
-    n_accepted = 0
-    batch_size = n * 10
-    while n_accepted < n:
-        x_cand = np.random.uniform(x_min, x_max, batch_size)
-        y_cand = np.random.uniform(0, max_f, batch_size)
-        f_cand = f(x_cand)
-        accepted = y_cand < f_cand
-        samples.extend(x_cand[accepted])
-        n_accepted += np.sum(accepted)
-        if n_accepted >= n:
-            break
-    return np.array(samples[:n])
+    counts = {}
+    with open(counts_file, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            parts = line.split('\t')
+            if len(parts) < 2:
+                continue
+            gene_id = parts[0]
+            try:
+                count = int(parts[1])
+            except ValueError:
+                continue
+            if count > 0:
+                counts[gene_id] = count
+    return counts
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Simulate RNA-seq with mixed power+gaussian distribution")
+    parser = argparse.ArgumentParser(description="Simulate RNA-seq from real read counts")
     parser.add_argument("-g", "--genome", required=True, help="Genome FASTA (indexed)")
     parser.add_argument("-t", "--annotation", required=True, help="GFF annotation file")
+    parser.add_argument("-c", "--counts", required=True, help="Tab-separated file: gene_id count")
     parser.add_argument("-o", "--outdir", default="simulated", help="Output directory")
-    parser.add_argument("--total_bp", type=float, default=60e9, help="Total bases to sequence (bp), default 60Gb")
     parser.add_argument("--readlen", type=int, default=150, help="Read length")
     parser.add_argument("--frag_mean", type=int, default=300, help="Mean fragment length")
     parser.add_argument("--frag_sd", type=int, default=50, help="Std dev fragment length")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
-    parser.add_argument("--num_genes", type=int, default=None, help="Number of genes to use (random subset)")
     parser.add_argument("--gene_type", default="gene", help="Feature type for gene")
     parser.add_argument("--transcript_type", default="mRNA", help="Feature type for transcript")
     parser.add_argument("--feature_type", default="exon",
                         help="Feature type for transcript parts (default: exon; use 'CDS' for coding sequences only)")
-    # Distribution parameters (fitted from real data)
-    parser.add_argument("--A1", type=float, default=-0.2315, help="Power exponent")
-    parser.add_argument("--C1", type=float, default=1.1590, help="Gaussian amplitude")
-    parser.add_argument("--mean1", type=float, default=1.2269, help="Gaussian mean")
-    parser.add_argument("--sigma1", type=float, default=0.7880, help="Gaussian sigma")
     args = parser.parse_args()
 
     random.seed(args.seed)
@@ -174,13 +159,20 @@ def main():
     # ------------------------------------------------------------
     # 1. Load genome index
     # ------------------------------------------------------------
-    print("[1] Loading genome index...")
+    print("[1] Loading genome index...", flush=True)
     genome = Fasta(args.genome)
 
     # ------------------------------------------------------------
-    # 2. Parse GFF (pure Python, no extra output)
+    # 2. Read counts file
     # ------------------------------------------------------------
-    print("[2] Parsing GFF annotation file...")
+    print("[2] Reading counts file...", flush=True)
+    counts_dict = read_counts_file(args.counts)
+    print(f"   Total genes with positive counts: {len(counts_dict)}", flush=True)
+
+    # ------------------------------------------------------------
+    # 3. Parse GFF and extract transcript sequences
+    # ------------------------------------------------------------
+    print("[3] Parsing GFF annotation file...", flush=True)
     gene_info = parse_gff(
         args.annotation,
         genome,
@@ -189,104 +181,60 @@ def main():
         feature_type=args.feature_type
     )
     if not gene_info:
-        print("Error: No genes extracted. Please check feature type parameters.")
+        print("Error: No genes extracted. Please check feature type parameters.", flush=True)
+        sys.exit(1)
+    print(f"   Extracted {len(gene_info)} genes from GFF.", flush=True)
+
+    # ------------------------------------------------------------
+    # 4. Intersect counts with GFF genes and filter length
+    # ------------------------------------------------------------
+    # Keep only genes that are in counts and have length >= readlen
+    valid_genes = {}
+    for gid, count in counts_dict.items():
+        if gid in gene_info and gene_info[gid]["length"] >= args.readlen:
+            valid_genes[gid] = count
+        elif gid in gene_info and gene_info[gid]["length"] < args.readlen:
+            print(f"   Warning: Gene {gid} has transcript length {gene_info[gid]['length']} < readlen {args.readlen}. Skipping.", flush=True)
+
+    print(f"   Genes with positive counts and valid length: {len(valid_genes)}", flush=True)
+    if len(valid_genes) == 0:
+        print("Error: No genes available for simulation.", flush=True)
         sys.exit(1)
 
-    # Write out lengths of all extracted genes
-    length_file_all = outdir / "all_gene_lengths.tsv"
-    with open(length_file_all, "w") as f:
-        f.write("gene_id\ttranscript_id\tlength\n")
-        for gid, info in gene_info.items():
-            f.write(f"{gid}\t{info['tx_id']}\t{info['length']}\n")
-    print(f"   All gene length file: {length_file_all} (total {len(gene_info)} genes)")
-
-    # Filter out genes shorter than read length
-    original_count = len(gene_info)
-    gene_info = {gid: info for gid, info in gene_info.items() if info["length"] >= args.readlen}
-    print(f"   Original gene count: {original_count}, after filtering (length >= {args.readlen}): {len(gene_info)}")
-
-    # Optionally select a random subset of genes
-    if args.num_genes is not None and args.num_genes > 0:
-        all_ids = list(gene_info.keys())
-        if args.num_genes < len(all_ids):
-            chosen = random.sample(all_ids, args.num_genes)
-            gene_info = {gid: gene_info[gid] for gid in chosen}
-        elif args.num_genes > len(all_ids):
-            print(f"Warning: --num_genes ({args.num_genes}) exceeds available genes ({len(all_ids)}). Using all.")
-
-    n_genes = len(gene_info)
-    if n_genes == 0:
-        print("Error: No genes available for simulation.")
-        sys.exit(1)
-
-    gene_ids = list(gene_info.keys())
+    # Prepare lists for simulation
+    gene_ids = list(valid_genes.keys())
+    counts_list = np.array([valid_genes[gid] for gid in gene_ids])
     seqs = [gene_info[gid]["seq"] for gid in gene_ids]
     lengths = np.array([gene_info[gid]["length"] for gid in gene_ids])
-    print(f"   Final number of genes: {n_genes}")
-    print(f"   Transcript lengths: min {lengths.min()}, max {lengths.max()}, median {np.median(lengths):.0f} bp")
 
-    # Write out lengths of genes used in simulation
-    length_file_used = outdir / "used_gene_lengths.tsv"
-    with open(length_file_used, "w") as f:
-        f.write("gene_id\ttranscript_id\tlength\n")
-        for gid, info in gene_info.items():
-            f.write(f"{gid}\t{info['tx_id']}\t{info['length']}\n")
-    print(f"   Used gene length file: {length_file_used}")
+    total_reads = counts_list.sum()
+    print(f"   Total read pairs to simulate: {total_reads:,}", flush=True)
 
-    # ------------------------------------------------------------
-    # 3. Generate expression: log10(TPM+1) from mixed distribution
-    # ------------------------------------------------------------
-    print("[3] Generating gene expression (log10(TPM+1) from mixed distribution)...")
-    log10_tpm1 = generate_expression_mixed_power_gaussian(
-        n=n_genes,
-        A1=args.A1,
-        C1=args.C1,
-        mean1=args.mean1,
-        sigma1=args.sigma1,
-        seed=args.seed
-    )
-    tpm_raw = 10 ** log10_tpm1 - 1
-    tpm_raw = np.maximum(tpm_raw, 0.0)
-
-    # Weight = TPM * transcript length
-    weights = tpm_raw * lengths
-    if np.sum(weights) == 0:
-        weights += 1e-9
-
-    total_reads = int(args.total_bp / (2 * args.readlen))
-    print(f"   Target read pairs: {total_reads:,}")
-
-    expected_counts = weights / np.sum(weights) * total_reads
-    counts = np.round(expected_counts).astype(int)
-    diff = total_reads - counts.sum()
-    if diff != 0 and n_genes > 0:
-        idx = np.random.choice(n_genes, size=abs(diff), replace=True)
-        counts[idx] += np.sign(diff) * 1
-    counts = np.maximum(counts, 0)
-    gene_counts = {gid: int(counts[i]) for i, gid in enumerate(gene_ids)}
-    print(f"   Actual assigned reads: {sum(gene_counts.values()):,}")
+    # Write out gene length and count info
+    with open(outdir / "gene_info.tsv", "w") as f:
+        f.write("gene_id\tlength\tassigned_count\n")
+        for gid, cnt in valid_genes.items():
+            f.write(f"{gid}\t{gene_info[gid]['length']}\t{cnt}\n")
+    print(f"   Gene info written to {outdir / 'gene_info.tsv'}", flush=True)
 
     # ------------------------------------------------------------
-    # 4. Simulate reads (paired-end)
+    # 5. Simulate reads (paired-end)
     # ------------------------------------------------------------
-    print("[4] Simulating reads (this may take a while)...")
+    print("[4] Simulating reads (this may take a while)...", flush=True)
     fq1 = gzip.open(outdir / "sample_01_1.fastq.gz", "wt")
     fq2 = gzip.open(outdir / "sample_01_2.fastq.gz", "wt")
     qual = "I" * args.readlen
 
     read_id = 0
     total_bp_written = 0
-    skipped = 0
+    skipped = 0  # should be zero as we filtered
 
     for i, gid in enumerate(gene_ids):
-        count = gene_counts[gid]
+        count = counts_list[i]
         if count <= 0:
             continue
         seq = seqs[i]
         seq_len = lengths[i]
-        if seq_len < args.readlen:
-            skipped += count
-            continue
 
         # Random start positions and fragment lengths
         pos = np.random.randint(0, max(1, seq_len - args.frag_mean), size=count)
@@ -328,28 +276,27 @@ def main():
             total_bp_written += 2 * args.readlen
 
             if read_id % 100000 == 0:
-                print(f"   Generated {read_id:,} read pairs")
+                print(f"   Generated {read_id:,} read pairs", flush=True)
 
     fq1.close()
     fq2.close()
-    print(f"   Done! Generated {read_id:,} read pairs")
-    print(f"   Skipped reads due to short transcripts: {skipped:,}")
-    print(f"   Total bases written: {total_bp_written:,} bp ({total_bp_written/1e9:.2f} Gb)")
+    print(f"   Done! Generated {read_id:,} read pairs", flush=True)
+    print(f"   Total bases written: {total_bp_written:,} bp ({total_bp_written/1e9:.2f} Gb)", flush=True)
 
     # ------------------------------------------------------------
-    # 5. Compute true TPM and output table
+    # 6. Compute true TPM and output table
     # ------------------------------------------------------------
-    print("[5] Computing true TPM and outputting table...")
-    rpk = np.array([gene_counts[gid] / gene_info[gid]["length"] if gene_info[gid]["length"] > 0 else 0 for gid in gene_ids])
-    tpm_real = rpk / np.sum(rpk) * 1e6 if np.sum(rpk) > 0 else np.zeros(n_genes)
+    print("[5] Computing true TPM and outputting table...", flush=True)
+    rpk = np.array([counts_list[i] / lengths[i] if lengths[i] > 0 else 0 for i in range(len(gene_ids))])
+    tpm_real = rpk / np.sum(rpk) * 1e6 if np.sum(rpk) > 0 else np.zeros(len(gene_ids))
     tpm_dict = {gid: tpm_real[i] for i, gid in enumerate(gene_ids)}
 
     with open(outdir / "simulated_counts_tpm.tsv", "w") as f:
         f.write("gene_id\tlength\tcounts\tTPM\n")
         for gid in gene_ids:
-            f.write(f"{gid}\t{gene_info[gid]['length']}\t{gene_counts[gid]}\t{tpm_dict[gid]:.2f}\n")
+            f.write(f"{gid}\t{gene_info[gid]['length']}\t{valid_genes[gid]}\t{tpm_dict[gid]:.2f}\n")
 
-    print("All tasks completed. Output files are located in:", outdir)
+    print("All tasks completed. Output files are located in:", outdir, flush=True)
 
 
 if __name__ == "__main__":
