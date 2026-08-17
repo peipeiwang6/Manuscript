@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-06_count_overlap_genes.py
+07_count_overlap_genes.py
 Count overlapping genes annotated in a GFF file.
 Overlap is defined as two genes on the same chromosome having partially or completely overlapping intervals (strand ignored).
 """

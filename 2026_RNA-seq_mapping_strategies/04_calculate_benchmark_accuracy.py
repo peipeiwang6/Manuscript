@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-04_calculate_pcc.py - Calculate Pearson correlation coefficient (PCC), p-value, and MSE between two count files.
+04_calculate_benchmark_accuracy.py - Calculate Pearson correlation coefficient (PCC), p-value, and MSE between two count files.
 
 Usage:
-    python 04_calculate_pcc.py --real real_counts.tsv --sim simulated_counts.tsv
+    python 04_calculate_benchmark_accuracy.py --real real_counts.tsv --sim simulated_counts.tsv
     [--output plot.png] [--log] [--delimiter TAB]
 
 Input files must be two-column TSV: gene_id (str), count (numeric).
