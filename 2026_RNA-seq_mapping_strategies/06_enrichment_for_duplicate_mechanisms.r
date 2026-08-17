@@ -27,8 +27,8 @@ expr <- merge(tpm_G, tpm_T, by = "Gene_ID")
 expr <- expr[-c(1:5), ]
 
 # log10(TPM + 1)
-expr$log_G    <- log10(as.numeric(expr$tpm_G) + 1)
-expr$log_T <- log10(as.numeric(expr$tpm_T) + 1)
+expr$log_G    <- log10(as.numeric(expr$TPM_G) + 1)
+expr$log_T <- log10(as.numeric(expr$TPM_T) + 1)
 
 # Z-score outlier
 expr$distance <- abs(expr$log_G - expr$log_T) / sqrt(2)
