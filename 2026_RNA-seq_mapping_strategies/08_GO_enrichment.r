@@ -179,41 +179,41 @@ all_odds_ratio <- c(ego_up_genome_bp$odds_ratio, ego_up_transcriptome_bp$odds_ra
 color_range <- range(all_neg_log10_padj, na.rm = TRUE)
 size_range <- range(all_odds_ratio, na.rm = TRUE)
 
-# 第一个图
+# first plot
 p_up_genome <- ggplot() +
-  # 添加显著性阈值线
+  
   geom_vline(xintercept = threshold_line, linetype = "dashed", color = "gray40", linewidth = 1.5) +
-  # 先添加非显著点（灰色）
+  
   geom_point(
     data = ego_not_significant,
     aes(x = neg_log10_padj, y = Description, size = odds_ratio),
     color = "gray70", alpha = 0.8
   ) +
-  # 再添加显著点（红色渐变）
+  
   geom_point(
     data = ego_significant,
     aes(x = neg_log10_padj, y = Description, size = odds_ratio, color = neg_log10_padj),
     alpha = 0.8
   ) +
-  # 在点旁边添加odds ratio值
+  
   geom_text(
     data = ego_up_genome_bp,
     aes(x = neg_log10_padj, y = Description, label = sprintf("%.2f", odds_ratio)),
     nudge_x = max(ego_up_genome_bp$neg_log10_padj, na.rm = TRUE) * 0.05,
     hjust = 0, size = 16, color = "black", fontface = "bold", vjust = 0.5
   ) +
-  # 设置X轴从0开始
+  
   scale_x_continuous(
     name = "-log10(p.adjust)",
     limits = c(0, max(ego_up_genome_bp$neg_log10_padj, na.rm = TRUE) * 1.3),
     expand = expansion(mult = c(0, 0.1))
   ) +
-  # 设置显著点的颜色渐变（从浅红到深红）- 使用统一的范围
+  
   scale_color_gradient(
-    low = "#FFB6C1",  # 浅粉色/浅红色
-    high = "#8B0000", # 深红色
+    low = "#FFB6C1",  
+    high = "#8B0000", 
     name = "-log10(p.adjust)",
-    limits = color_range, # 添加统一的范围
+    limits = color_range, 
     guide = guide_colorbar(
       title.position = "top",
       title.hjust = 0.5,
@@ -221,11 +221,11 @@ p_up_genome <- ggplot() +
       barheight = unit(15, "cm")
     )
   ) +
-  # 设置点的大小范围 - 使用统一的范围
+  
   scale_size_continuous(
     range = c(6, 12), 
     name = "Odds Ratio",
-    limits = size_range # 添加统一的范围
+    limits = size_range 
   ) +
   labs(y = NULL, title = "Inoculation VS Control WT genome Downregulated") +
   theme_bw(base_size = 14) +
@@ -250,41 +250,41 @@ p_up_genome <- ggplot() +
     legend.position = "right"
   )
 
-# 第二个图 - 使用相同的标度范围
+# second plot - use the same scale range
 p_up_transcriptome <- ggplot() +
-  # 添加显著性阈值线
+  
   geom_vline(xintercept = threshold_line, linetype = "dashed", color = "gray40", linewidth = 1.5) +
-  # 先添加非显著点（灰色）
+  
   geom_point(
     data = ego_transcriptome_not_significant,
     aes(x = neg_log10_padj, y = Description, size = odds_ratio),
     color = "gray70", alpha = 0.8
   ) +
-  # 再添加显著点（红色渐变）
+  
   geom_point(
     data = ego_transcriptome_significant,
     aes(x = neg_log10_padj, y = Description, size = odds_ratio, color = neg_log10_padj),
     alpha = 0.8
   ) +
-  # 在点旁边添加odds ratio值
+ 
   geom_text(
     data = ego_up_transcriptome_bp,
     aes(x = neg_log10_padj, y = Description, label = sprintf("%.2f", odds_ratio)),
     nudge_x = max(ego_up_transcriptome_bp$neg_log10_padj, na.rm = TRUE) * 0.05,
     hjust = 0, size = 16, color = "black", fontface = "bold", vjust = 0.5
   ) +
-  # 设置X轴从0开始
+ 
   scale_x_continuous(
     name = "-log10(p.adjust)",
     limits = c(0, max(ego_up_transcriptome_bp$neg_log10_padj, na.rm = TRUE) * 1.3),
     expand = expansion(mult = c(0, 0.1))
   ) +
-  # 设置显著点的颜色渐变（从浅红到深红）- 使用统一的范围
+  
   scale_color_gradient(
-    low = "#FFB6C1",  # 浅粉色/浅红色
-    high = "#8B0000", # 深红色
+    low = "#FFB6C1",  
+    high = "#8B0000", 
     name = "-log10(p.adjust)",
-    limits = color_range, # 使用相同的范围
+    limits = color_range, 
     guide = guide_colorbar(
       title.position = "top",
       title.hjust = 0.5,
@@ -292,11 +292,11 @@ p_up_transcriptome <- ggplot() +
       barheight = unit(15, "cm")
     )
   ) +
-  # 设置点的大小范围 - 使用统一的范围
+ 
   scale_size_continuous(
     range = c(6, 12), 
     name = "Odds Ratio",
-    limits = size_range # 使用相同的范围
+    limits = size_range 
   ) +
   labs(y = NULL, title = "Inoculation VS Control WT transcriptome Downregulated") +
   theme_bw(base_size = 14) +
@@ -350,52 +350,48 @@ transcriptome_sig_genes <- rownames(transcriptome_deg)[!is.na(transcriptome_deg$
                                                          transcriptome_deg$padj < 0.05 & 
                                                          abs(transcriptome_deg$log2FoldChange) > 1]
 
-# 创建基因列表
 gene_lists <- list(
   Genome = genome_sig_genes,
   Transcriptome = transcriptome_sig_genes
 )
 
-# 创建美观的韦恩图
+# create venn plot
 venn.plot <- venn.diagram(
   x = gene_lists,
-  filename = NULL,  # 不直接保存文件
-  height = 10,  # PDF使用英寸为单位
-  width = 10,   # PDF使用英寸为单位
+  filename = NULL, 
+  height = 10,  
+  width = 10,  
   resolution = 300,
   col = "transparent",
-  fill = c("#E0367A", "#029149"),  # 基因组和转录组的颜色
+  fill = c("#E0367A", "#029149"),  
   alpha = 0.50,
   label.col = c("black", "black", "black"),
-  cex = 2.5,  # 数字标签大小
+  cex = 2.5, 
   fontfamily = "serif",
   fontface = "bold",
-  cat.col = c("#E0367A", "#029149"),  # 类别标签颜色（与填充色一致）
-  cat.cex = 2.5,  # 类别标签大小
-  cat.pos = c(-30, 30),  # 类别标签位置
-  cat.dist = c(0.05, 0.05),  # 类别标签距离
+  cat.col = c("#E0367A", "#029149"),  
+  cat.cex = 2.5,  
+  cat.pos = c(-30, 30), 
+  cat.dist = c(0.05, 0.05), 
   cat.fontfamily = "serif",
   cat.fontface = "bold",
   rotation.degree = 0,
   margin = 0.2,
-  main = "Venn Diagram of Upregulated DEGs between Genome and Transcriptome",  # 主标题
-  main.cex = 2.0,  # 标题字体大小
-  main.col = "black",  # 标题颜色
-  main.fontfamily = "serif",  # 标题字体
-  main.fontface = "bold",  # 标题字体样式
-  main.pos = c(0.5, 0.95)  # 标题位置
+  main = "Venn Diagram of Upregulated DEGs between Genome and Transcriptome",  
+  main.cex = 2.0,  
+  main.col = "black", 
+  main.fontfamily = "serif",  
+  main.fontface = "bold", 
+  main.pos = c(0.5, 0.95) 
 )
 
-# 显示Venn图
 grid.newpage()
 grid.draw(venn.plot)
 
-# 保存为PDF
 pdf(file = "CRA004377_Inoculation_VS_WT_Upregulated_Genome_Transcriptome_DEGs_Venn.pdf", width = 10, height = 10)
 grid.draw(venn.plot)
 dev.off()
 
-# 保存为PNG
 png(file = "Genome_Transcriptome_DEGs_Venn.png", width = 10, height = 10, 
     units = "in", res = 300)
 grid.draw(venn.plot)
