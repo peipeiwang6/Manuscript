@@ -1,4 +1,4 @@
-### Scripts for our manuscript "Genome-guided vs transcriptome-first mapping: systematic evaluation of RNA-seq quantification bias for tandemly duplicated genes in model and crop plants"###
+# Scripts for our manuscript "Genome-guided vs transcriptome-first mapping: systematic evaluation of RNA-seq quantification bias for tandemly duplicated genes in model and crop plants"
 
 # parameter setting for RNA-seq read mapping (Tophat2, HISAT2, STAR) and read count calculation (HTSeq-count)
 01_RNA-seq_mapping_and_read_counts.sh
