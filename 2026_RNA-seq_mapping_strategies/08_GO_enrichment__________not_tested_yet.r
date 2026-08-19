@@ -1,10 +1,46 @@
-# BiocManager::install(c("DESeq2", "clusterProfiler", "org.Athaliana.eg.db"))
+# BiocManager::install(c("AnnotationForge","org.At.eg.db"))
 library(tidyverse)
 library(DESeq2)
 library(dplyr)
 library(clusterProfiler)
-library(org.Athaliana.eg.db)
+library(AnnotationForge)
+library(org.At.eg.db)
 setwd("E:\\Manuscripts\\2026_RNA-seq_mapping\\Figures\\Test_for_GO_enrichment_scripts")
+
+#==== create the OrgDb GO annotation package for the target species ==== 
+# input file contains two columns: gene ID and GO annotation (multiple GO annotation were deliminated with space)
+geneID2GO <- read.table(file = 'SL5.0_GO_list_processed_merged_single.map', header = FALSE)
+colnames(geneID2GO) <- c("GID", "GO")
+
+# prepare gene matrix
+fSym <- transform(geneID2GO, SYMBOL = GID, GENENAME = GID)[, c("GID", "SYMBOL", "GENENAME")]
+fSym <- fSym[fSym[, 2] != "-", ]
+fSym <- fSym[fSym[, 3] != "-", ]
+fSym <- fSym[!duplicated(fSym), ]
+dim(fSym)
+
+# prepare GO matrix
+fGO <- transform(geneID2GO, EVIDENCE = rep("", length(GID)))
+fGO <- fGO[!duplicated(fGO), ]
+dim(fGO)
+
+# build the OrgDb GO annotation package
+makeOrgPackage(
+  gene_info   = fSym,
+  go          = fGO,
+  version     = "0.2",
+  maintainer  = "jyx <873553743@qq.com>",
+  author      = "jyx <873553743@qq.com>",
+  outputDir   = ".",
+  tax_id      = "4081",
+  genus       = "Solanum",
+  species     = "lycopersicum",
+  goTable     = "go"
+)
+
+# install the GO annotation package
+install.packages("./org.Slycopersicum.eg.db", type = "source", repos = NULL)
+
 
 #==== GO enrichment for DEGs from T-guided analysis, for G-guided analysis, please modified the script correspondingly==== 
 #merge read count files
