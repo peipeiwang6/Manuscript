@@ -1,6 +1,9 @@
 ### **Scripts for our manuscript: Usefulness of scRNA-seq data in predicting plant metabolic pathway genes**
 
-# 1. Clustering coefficient
+# 1. WGCNA analysis
+The [/WGCNA_analysis](https://github.com/peipeiwang6/Manuscript/tree/main/2024_scRNA_in_pathway_prediction/WGCNA_analysis) folder contains the code used to calculate gene co-expression within a gene expression matrix based on weighted gene co-expression network analysis (WGCNA). The analysis is implemented in R, and the main script is named WGCNA.R.
+
+# 2. Clustering coefficient
 The [/Clustering_coefficient](https://github.com/peipeiwang6/Manuscript/tree/main/2024_scRNA_in_pathway_prediction/Clustering_coefficient) folder contains the code for calculating the clustering coefficient and background values using a Python script named `calculate_clustering_coefficient.py`. The script calls `WGCNA.R` to generate the input data necessary for calculating the clustering coefficient, and finally calls `Simulation_C_density_plot_230328.R` to visualize the results. **No manual execution of R scripts is required**.
 * Ensure the required Python and R packages are installed.
 
@@ -15,7 +18,7 @@ To execute this code, please run the following command:
 python calculate_clustering_coefficient.py input_data.csv
 ```
 
-# 2.Model buliding
+# 3.Model buliding
 The [/Model_building](https://github.com/peipeiwang6/Manuscript/tree/main/2024_scRNA_in_pathway_prediction/Model_buliding) folder contains the code for building machine learning models based on different algorithms, including FASTAI, neural network (NN), K-Nearest Neighbors (KNN), eXtreme Gradient Boosting (XGBoost), and Random Forest (RF), using a gene expression matrix (`model_building_code.py`). In addition, the models corresponding to these algorithms are also built using AutoGluon based on the code in `AutoGluon_model_building.py`, where the models to be built can be specified and modified using the ‘hyperparameters’ argument. The data is split into 80% for training and 20% for testing. The folder also includes an R script for generating visualizations of model performance. **No manual execution of R scripts is required**. The models will be saved after training, allowing for future use without retraining. 
 
 ## input files
@@ -42,7 +45,7 @@ Running the FASTAI, NN, KNN, XGBoost, or Random Forest models:
 python model_building_code.py expression_matrix.csv gene_classification.csv unknown_gene_expression.csv
 ```
 
-# 3. Loading the saved models
+# 4. Loading the saved models
 The loaded model predicts labels for the new data, and the F1 scores are calculated for each model afterward. The pre-trained models are stored in the specified `model_folder` with a `.pkl` extension. To use the code, please provide the new dataset and its corresponding classifications (labels), along with the folder containing the saved models.
 
 ```bash
