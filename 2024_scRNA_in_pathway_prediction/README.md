@@ -1,7 +1,7 @@
 ### **Scripts for our manuscript: Usefulness of scRNA-seq data in predicting plant metabolic pathway genes**
 
 # 1. WGCNA analysis
-The [/WGCNA_analysis](https://github.com/peipeiwang6/Manuscript/tree/main/2024_scRNA_in_pathway_prediction/WGCNA_analysis) folder contains the code used to calculate gene co-expression within a gene expression matrix based on weighted gene co-expression network analysis (WGCNA). The analysis is implemented in R, and the main script is named WGCNA.R.
+The [/WGCNA_analysis](https://github.com/peipeiwang6/Manuscript/tree/main/2024_scRNA_in_pathway_prediction/WGCNA_analysis) folder contains the code used to calculate gene co-expression within a gene expression matrix based on weighted gene co-expression network analysis (WGCNA). The analysis is implemented in R, and the main script is named `WGCNA.R`.
 
 # 2. Clustering coefficient
 The [/Clustering_coefficient](https://github.com/peipeiwang6/Manuscript/tree/main/2024_scRNA_in_pathway_prediction/Clustering_coefficient) folder contains the code for calculating the clustering coefficient and background values using a Python script named `calculate_clustering_coefficient.py`. The script calls `WGCNA.R` to generate the input data necessary for calculating the clustering coefficient, and finally calls `Simulation_C_density_plot_230328.R` to visualize the results. **No manual execution of R scripts is required**.
