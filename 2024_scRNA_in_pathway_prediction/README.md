@@ -45,7 +45,7 @@ Running the FASTAI, NN, KNN, XGBoost, or Random Forest models:
 python model_building_code.py expression_matrix.csv gene_classification.csv unknown_gene_expression.csv
 ```
 
-# 4. Loading the saved models
+# 4. Loading the saved model
 This script loads a pre-trained multi-label classification saved model file (`.pkl`) produced by `model_building_code.py` and predicts the functional classification of genes in a new expression dataset. It outputs a CSV file containing Gene and comma-separated predicted classification names. To run the prediction, provide the prediction script, a new gene expression dataset (CSV) containing a **"Gene"** column and **"the same feature columns**" used during training, a gene classification file named `class_lables.csv` (a single column of all class types, named **"Classification"**), and a saved model file (.pkl).
     
     Supported algorithms:
