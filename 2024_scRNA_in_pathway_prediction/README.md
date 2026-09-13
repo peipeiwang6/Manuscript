@@ -8,7 +8,7 @@ The [/Clustering_coefficient](https://github.com/peipeiwang6/Manuscript/tree/mai
 * Ensure the required Python and R packages are installed.
 
 ## input data
-* Expression matrix: the input expression data is provided in **CSV format** as a matrix, where each column represents a sample and each row represents a gene. It is essential that the gene column is labeled as **'Gene'** — any different name will not be recognized.
+* Expression matrix: the input expression data is provided in **CSV format** as a matrix, where each column represents a sample and each row represents a gene. It is essential that the gene column is labeled as **"Gene"** — any different name will not be recognized.
 * Gene classification: contains two columns: one for genes and another for their classification information. The first column should match the **"Gene"** column in the expression matrix, and the second column must be named **"Classification"**. 
 
 *Example data can be found in the folder* [/Example_data_for_clustering_coefficient_calculating](https://github.com/peipeiwang6/Manuscript/tree/main/2024_scRNA_in_pathway_prediction/Example_data_for_clustering_coefficient_calculating).
@@ -46,7 +46,7 @@ python model_building_code.py expression_matrix.csv gene_classification.csv unkn
 ```
 
 # 4. Loading the saved model
-This script loads a pre-trained multi-label classification saved model file (`.pkl`) produced by `model_building_code.py` and predicts the functional classification of genes in a new expression dataset. It outputs a CSV file containing Gene and comma-separated predicted classification names. To run the prediction, provide the prediction script, a new gene expression dataset (CSV) containing a **"Gene"** column and **"the same feature columns**" used during training, a gene classification file named `class_lables.csv` (a single column of all class types, named **"Classification"**), and a saved model file (.pkl).
+This script loads a pre-trained multi-label classification saved model file (`.pkl`) produced by `model_building_code.py` and predicts the functional classification of genes in a new expression dataset. It outputs a CSV file containing Gene and comma-separated predicted classification names. To run the prediction, provide the prediction script, a new gene expression dataset (CSV) containing a *"Gene"** column and **the same feature columns** used during training, a gene classification file named `class_lables.csv` (a single column of all class types, named **"Classification"**), and a saved model file (.pkl).
     
     Supported algorithms:
     - `KNN`
