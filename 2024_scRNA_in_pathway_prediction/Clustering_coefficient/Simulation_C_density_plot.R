@@ -16,7 +16,7 @@ value <- read.csv(value, header = T)
 
 cols <- colnames(Refervalue)[1:14]
 pvalue_list <- c()
-num <- length(Refervalue)
+num <- nrow(Refervalue)
 for (i in 1:length(cols)) {
   count_gt <- sum(Refervalue[[cols[i]]] >= value$Refervalue[i], na.rm = TRUE)
   p <- (count_gt + 1) / (num + 1)

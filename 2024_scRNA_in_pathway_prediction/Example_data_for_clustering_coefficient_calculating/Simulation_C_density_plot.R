@@ -18,13 +18,12 @@ cols <- colnames(Refervalue)[1:14]
 pvalue_list <- c()
 num <- nrow(Refervalue)
 for (i in 1:length(cols)) {
-  count_gt <- sum(Refervalue[[cols[i]]] >= value$Mean[i], na.rm = TRUE)
-  p_val <- (count_gt + 1) / (num + 1)
-  pvalue_list <- c(pvalue_list, format(p_val, scientific = TRUE, digits = 3))
-
+  count_gt <- sum(Refervalue[[cols[i]]] >= value$Refervalue[i], na.rm = TRUE)
+  p <- (count_gt + 1) / (num + 1)
+  pvalue_list <- c(pvalue_list, format(p, scientific = TRUE, digits = 3))
   p <- paste0('p', cols[i])
   den <- density(Refervalue[[cols[i]]])
-  Max<-max(den$y)*0.75
+  Max<-max(den$y)*1.1
   x_lim = max(value$Refervalue*1.3)
   data_change <- ggplot(Refervalue, aes(x = !!sym(cols[i]))) + 
     geom_density(color = "#69b3a2", lwd = 0.6, linetype = 1, fill="#69b3a2", adjust=1.75, alpha=0.5) +

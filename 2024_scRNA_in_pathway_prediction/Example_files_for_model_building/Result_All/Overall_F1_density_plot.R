@@ -29,7 +29,7 @@ x_end = Mean + SD
 data_change <- ggplot(Refervalue, aes(x = Refervalue[[1]])) + 
   geom_density(color = "#69b3a2", lwd = 0.6, linetype = 1, fill="#69b3a2", adjust=1.75, alpha=0.5) +
   labs(x = 'F1_score', y = "Density") +
-  geom_rect(xmin=x_start, xmax=x_end, ymin=-Inf, ymax=Inf, fill="#E9DCDB", alpha=0.02, linewidth = 0) +
+  geom_rect(xmin=x_start, xmax=x_end, ymin=-Inf, ymax=Inf, fill="#EDE2E1B1", linewidth = 0) +
   geom_vline(xintercept = Mean, linetype = 1, color="red", linewidth = 0.6) +
   geom_vline(xintercept = mean(Refervalue[[1]]), linetype = 2, color="grey", linewidth = 0.6) +
   theme_bw() +

@@ -19,7 +19,7 @@ cols <- colnames(Refervalue)[1:14]
 pvalue_list <- c()
 num <- nrow(Refervalue)
 for (i in 1:length(cols)) {
-  count_gt <- sum(Refervalue[[cols[i]]] > value$Mean[i], na.rm = TRUE)
+  count_gt <- sum(Refervalue[[cols[i]]] >= value$Mean[i], na.rm = TRUE)
   p_val <- (count_gt + 1) / (num + 1)
   pvalue_list <- c(pvalue_list, format(p_val, scientific = TRUE, digits = 3))
   p <- paste0('p', cols[i])
@@ -31,7 +31,7 @@ for (i in 1:length(cols)) {
   data_change <- ggplot(Refervalue, aes(x = !!sym(cols[i]))) + 
     geom_density(color = "#69b3a2", lwd = 0.6, linetype = 1, fill="#69b3a2", adjust=1.75, alpha=0.5) +
     labs(x = cols[i], y = "Density") +
-    geom_rect(xmin=x_start, xmax=x_end, ymin=-Inf, ymax=Inf, fill="#E9DCDB", alpha=0.02, linewidth = 0) +
+    geom_rect(xmin=x_start, xmax=x_end, ymin=-Inf, ymax=Inf, fill="#EDE2E1B1", linewidth = 0) +
     geom_vline(xintercept = value$Mean[i], linetype = 1, color="red", linewidth = 0.6) +
     geom_vline(xintercept = mean(Refervalue[[cols[i]]]), linetype = 2, color="grey", linewidth = 0.6) +
     theme_bw() + 
