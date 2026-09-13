@@ -46,8 +46,18 @@ python model_building_code.py expression_matrix.csv gene_classification.csv unkn
 ```
 
 # 4. Loading the saved models
-The loaded model predicts labels for the new data, and the F1 scores are calculated for each model afterward. The pre-trained models are stored in the specified `model_folder` with a `.pkl` extension. To use the code, please provide the new dataset and its corresponding classifications (labels), along with the folder containing the saved models.
+This script loads a pre-trained multi-label classification saved model file (`.pkl`) produced by `model_building_code.py` and predicts the functional classification of genes in a new expression dataset. It outputs a CSV file containing Gene and comma-separated predicted classification names. To run the prediction, provide the prediction script, a new gene expression dataset (CSV) containing a **"Gene"** column and **"the same feature columns**" used during training, a gene classification file named `class_lables.csv` (a single column of all class types, named **"Classification"**), and a saved model file (.pkl).
+    Supported algorithms:
+    - `KNN`
+    - `RandomForest`
+    - `xgboost`
+    - `fastai`
+    - `NeuralNetwork`
 
 ```bash
-python load_models.py new_data.csv new_labels.csv model_folder/
+python Load_model.py 
+        --model_type <MODULE> \
+        --model_path <MODEL_PATH> \
+        --data_path new_expression_matrix.csv \
+        --label_columns class_labels.csv
 ```
