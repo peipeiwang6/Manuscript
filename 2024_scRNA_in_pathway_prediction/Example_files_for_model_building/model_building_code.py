@@ -1,8 +1,11 @@
+
+
 import os
 import sys
 import pandas as pd
 import numpy as np
 import multiprocessing
+import itertools
 from scipy.sparse import csr_matrix
 from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import KNeighborsClassifier
@@ -245,7 +248,7 @@ class model_selection():
         grid_search = GridSearchCV(bst, param_grid, cv=5)
         grid_search.fit(X_train, y_train)
         return grid_search.best_estimator_
-    def fastai_model(self, train1_df, valid_df):
+    def fastai_model(self, train1_df, valid_df, label_cols):
         layer_options = [[200, 100], [100, 50], [512, 256]]
         lr_options = [1e-3, 1e-2]
         epoch_options = [5, 10]
@@ -256,18 +259,12 @@ class model_selection():
         df_combined = pd.concat([train1_df, valid_df], ignore_index=True)
         train_idx = list(range(len(train1_df)))
         val_idx = list(range(len(train1_df), len(df_combined)))
-        splits = (train_idx, val_idx)
-        mlb = MultiLabelBinarizer()
-        labels_enc = pd.DataFrame(mlb.fit_transform(df_combined['Classification'].str.split(',')), columns=mlb.classes_)
-        df_encoded = pd.concat([df_combined, labels_enc], axis=1)
-        col_name = train1_df.columns.to_list()
-        col_names = [x for x in col_name if x not in ('Gene', 'Classification')] 
-        feature_cols = col_names
-        label_cols = mlb.classes_.tolist()
+        splits = (train_idx, val_idx) 
+        feature_cols = [c for c in df_combined.columns if c not in (['Gene'] + list(label_cols))]
         for layers, lr, epochs, bs in itertools.product(layer_options, lr_options, epoch_options, bs_options):
             try:
                 dls = TabularDataLoaders.from_df(
-                    df_encoded,
+                    df_combined,
                     procs=[],
                     cont_names=feature_cols,
                     cat_names=[],
@@ -292,7 +289,7 @@ class model_selection():
                 continue
         print(f"Best F1: {best_score:.4f}, Params: {best_params}")
         return best_model
-    def NN_model(self, train1_df, valid_df, gene_train1, gene_val):
+    def NN_model(self, X_train, y_train, X_val, y_val):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         layer_options = [[200, 100], [100, 50], [512, 256]]
         lr_options = [1e-3, 1e-2]
@@ -302,15 +299,10 @@ class model_selection():
         best_score = 0
         best_model = None
         best_params = {}
-        gene_train1['Classification'] = gene_train1['Classification'].apply(lambda x: x.split(',') if isinstance(x, str) else x)
-        gene_val['Classification'] = gene_val['Classification'].apply(lambda x: x.split(',') if isinstance(x, str) else x)
-        mlb = MultiLabelBinarizer()
-        train_label_matrix = mlb.fit_transform(gene_train1['Classification'])
-        val_label_matrix = mlb.fit_transform(gene_val['Classification'])
-        X_train = train1_df.drop(columns=['Gene','Classification']).values.astype(np.float32)
-        y_train = train_label_matrix    
-        X_val = valid_df.drop(columns=['Gene','Classification']).values.astype(np.float32)
-        y_val = val_label_matrix
+        X_train = np.asarray(X_train, dtype=np.float32)
+        y_train = np.asarray(y_train, dtype=np.float32)
+        X_val = np.asarray(X_val, dtype=np.float32)
+        y_val = np.asarray(y_val, dtype=np.float32)
         for layers, lr, epochs, bs in itertools.product(layer_options, lr_options, epoch_options, bs_options):
             try:
                 model = nn.Sequential(
@@ -361,6 +353,7 @@ class model_selection():
         return best_model
 
 def Real_Score(module, gene_train_matrix_df, class_csr_matrix_df, best_model, txt, gene_test_matrix_df, train_label, test_label, unknown_gene_exp):
+    fixed_labels = class_csr_matrix_df.columns[1:].tolist()
     out = []
     test_f1 = []
     global_train = []
@@ -371,7 +364,7 @@ def Real_Score(module, gene_train_matrix_df, class_csr_matrix_df, best_model, tx
     Global_test_name = module + "_Overall_Score_test_" + txt
 
     gene_test_multilabel = pd.merge(gene_test_matrix_df.loc[:,'Gene'], class_csr_matrix_df, on="Gene", how="left")
-    test_multilabel = np.array(gene_test_multilabel[[x for x in list(gene_test_multilabel)[1:]]] == 1)
+    test_multilabel = np.array(gene_test_multilabel[fixed_labels] == 1)
 
     save_folder = 'save_models'
     if not os.path.exists(save_folder):
@@ -380,7 +373,7 @@ def Real_Score(module, gene_train_matrix_df, class_csr_matrix_df, best_model, tx
     for i in range(10):
         gene_train_df = gene_train_matrix_df.sample(frac=1, random_state=i).reset_index(drop=True)
         gene_train_multilabel = pd.merge(gene_train_df.loc[:, 'Gene'], class_csr_matrix_df, on="Gene", how="left")
-        input_gene_train_multilabel = np.array(gene_train_multilabel[[x for x in list(gene_train_multilabel)[1:]]] == 1)
+        input_gene_train_multilabel = np.array(gene_train_multilabel[fixed_labels] == 1)
         X_train, y_train = gene_train_df.iloc[:, 1:], input_gene_train_multilabel
 
         model_on = model_selection(matrix_df = gene_train_df, txt = txt)
@@ -439,38 +432,33 @@ def Real_Score(module, gene_train_matrix_df, class_csr_matrix_df, best_model, tx
             test_f1.append(test_scores)
             global_test.append(overall_test_scores)
         elif module == 'fastai':
-            train_df = pd.merge(gene_train_df, train_label, on='Gene', how='left')
-            test_df = pd.merge(gene_test_matrix_df, test_label, on='Gene', how='left')
-            train_label['Classification'] = train_label['Classification'].astype(str).apply(lambda x: ','.join([i.strip() for i in x.split(',')]))
+            gene_train_labels = pd.merge(gene_train_df[['Gene']], class_csr_matrix_df, on='Gene', how='left')
+            gene_train_bin = gene_train_labels[fixed_labels].astype(int)
             kf = KFold(n_splits=5, shuffle=True, random_state=42)
-            folds = list(kf.split(train_label))
+            folds = list(kf.split(gene_train_df))
             train_idx, val_idx = folds[0]
-            train_genes = train_label.iloc[train_idx]['Gene'].values
-            val_genes = train_label.iloc[val_idx]['Gene'].values
-            train_df = train_df.drop(columns=['Classification'])
-            train_df = train_df.set_index('Gene')
-            train1_df = train_df.loc[train_genes]
-            val1_df = train_df.loc[val_genes]
-            gene_train1 = train_label[train_label['Gene'].isin(train_genes)].reset_index(drop=True)
-            gene_val = train_label[train_label['Gene'].isin(val_genes)].reset_index(drop=True)
-            train1_df = pd.merge(train1_df.reset_index(), gene_train1, on='Gene', how='left')
-            valid_df = pd.merge(val1_df.reset_index(), gene_val, on='Gene', how='left')
-            best_model = model_on.fastai_model(train1_df, valid_df)
+            train1_df = pd.concat([
+                gene_train_df.iloc[train_idx].reset_index(drop=True),
+                gene_train_bin.iloc[train_idx].reset_index(drop=True)
+            ], axis=1)
+            valid_df = pd.concat([
+                gene_train_df.iloc[val_idx].reset_index(drop=True),
+                gene_train_bin.iloc[val_idx].reset_index(drop=True)
+            ], axis=1)
+            best_model = model_on.fastai_model(train1_df, valid_df, fixed_labels)
             dls = best_model.dls
             train_preds, train_targets = best_model.get_preds(dl=dls.train)
             y_train_pred_bin = (train_preds.numpy() > 0.2).astype(int)
             y_train_true = train_targets.numpy()
             train_f1_overall = f1_score(y_train_true, y_train_pred_bin, average='macro')
             train_f1_per_label = f1_score(y_train_true, y_train_pred_bin, average=None)
-            test_df = test_df.drop(columns=['Classification'])
-            test_df = test_df.set_index('Gene')
-            dl_test = best_model.dls.test_dl(test_df.reset_index())
+            gene_test_labels = pd.merge(gene_test_matrix_df[['Gene']], class_csr_matrix_df, on='Gene', how='left')
+            test_bin = gene_test_labels[fixed_labels].astype(int)
+            test_features = gene_test_matrix_df.drop(columns=['Gene']).reset_index(drop=True)
+            dl_test = best_model.dls.test_dl(test_features)
             preds, _ = best_model.get_preds(dl=dl_test)
             y_pred = (preds.numpy() > 0.2).astype(int)
-            true_labels_df = test_label[['Gene', 'Classification']]
-            true_labels_df['Classification'] = true_labels_df['Classification'].astype(str).apply(lambda x: ','.join([i.strip() for i in x.split(',')]))
-            mlb = MultiLabelBinarizer()
-            y_true = mlb.fit_transform(true_labels_df['Classification'].apply(lambda x: x.split(',')))
+            y_true = test_bin.values.astype(int)
             test_f1_overall = f1_score(y_true, y_pred, average='macro')
             test_f1_per_label = f1_score(y_true, y_pred, average=None)
             out.append(train_f1_per_label)
@@ -478,36 +466,21 @@ def Real_Score(module, gene_train_matrix_df, class_csr_matrix_df, best_model, tx
             test_f1.append(test_f1_per_label)
             global_test.append(test_f1_overall)
         elif module == 'NeuralNetwork':
-            train_df = pd.merge(gene_train_df, train_label, on='Gene', how='left')
-            train_df['Classification'] = train_df['Classification'].astype(str).apply(lambda x: ','.join([i.strip() for i in x.split(',')]))
+            gene_train_labels = pd.merge(gene_train_df[['Gene']], class_csr_matrix_df, on='Gene', how='left')
+            y_train_matrix = gene_train_labels[fixed_labels].values.astype(np.float32)
+            X_train_nn = gene_train_df.drop(columns=['Gene']).values.astype(np.float32)
             kf = KFold(n_splits=5, shuffle=True, random_state=42)
-            folds = list(kf.split(train_df))
+            folds = list(kf.split(X_train_nn))
             train_idx, val_idx = folds[0]
-            train_genes = train_label.iloc[train_idx]['Gene'].values
-            val_genes = train_label.iloc[val_idx]['Gene'].values
-            train_df = train_df.drop(columns=['Classification'])
-            train_df = train_df.set_index('Gene')
-            train1_df = train_df.loc[train_genes]
-            val1_df = train_df.loc[val_genes]
-            gene_train1 = train_label[train_label['Gene'].isin(train_genes)].reset_index(drop=True)
-            gene_val = train_label[train_label['Gene'].isin(val_genes)].reset_index(drop=True)
-            train1_df = pd.merge(train1_df.reset_index(), gene_train1, on='Gene', how='left')
-            valid_df = pd.merge(val1_df.reset_index(), gene_val, on='Gene', how='left')
-            best_model = model_on.NN_model(train1_df, valid_df, gene_train1, gene_val)
+            X_tr = X_train_nn[train_idx]
+            y_tr = y_train_matrix[train_idx]
+            X_va = X_train_nn[val_idx]
+            y_va = y_train_matrix[val_idx]
+            best_model = model_on.NN_model(X_tr, y_tr, X_va, y_va)
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             threshold = 0.2
-            mlb = MultiLabelBinarizer()
-            train_label['Classification'] = train_label['Classification'].apply(lambda x: x.split(',') if isinstance(x, str) else x)
-            test_label['Classification'] = test_label['Classification'].apply(lambda x: x.split(',') if isinstance(x, str) else x)
-            y_train_matrix = mlb.fit_transform(train_label['Classification'])
-            y_test_matrix = mlb.transform(test_label['Classification'])
-            X_train = gene_train_df.drop(columns=['Gene']).values.astype(np.float32)
-            X_test = gene_test_matrix_df.drop(columns=['Gene']).values.astype(np.float32)
-            train_dataset = GeneExpressionDataset(X_train, y_train_matrix)
-            test_dataset = GeneExpressionDataset(X_test, y_test_matrix)
+            train_dataset = GeneExpressionDataset(X_train_nn, y_train_matrix)
             train_loader = DataLoader(train_dataset, batch_size=64, shuffle=False)
-            test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
-
             best_model.eval()
             train_preds, train_targets = [], []
             with torch.no_grad():
@@ -524,6 +497,12 @@ def Real_Score(module, gene_train_matrix_df, class_csr_matrix_df, best_model, tx
             global_train.append(train_f1_overall)
             out.append(train_f1_per_label)
 
+            gene_test_labels = pd.merge(gene_test_matrix_df[['Gene']], class_csr_matrix_df, on='Gene', how='left')
+            y_test_matrix = gene_test_labels[fixed_labels].values.astype(np.float32)
+            X_test = gene_test_matrix_df.drop(columns=['Gene']).values.astype(np.float32)
+
+            test_dataset = GeneExpressionDataset(X_test, y_test_matrix)
+            test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
             test_preds, test_targets = [], []
             with torch.no_grad():
                 for X_batch, y_batch in test_loader:
@@ -538,7 +517,6 @@ def Real_Score(module, gene_train_matrix_df, class_csr_matrix_df, best_model, tx
             test_f1_per_label = f1_score(test_targets, test_preds, average=None)
             global_test.append(test_f1_overall)
             test_f1.append(test_f1_per_label)
-            labels = pd.DataFrame(list(mlb.classes_))
 
         # save models
         model_filename =os.path.join(save_folder, f'model_{i+1}.pkl')
@@ -564,9 +542,8 @@ def Real_Score(module, gene_train_matrix_df, class_csr_matrix_df, best_model, tx
     df_t = df.T
     df_t2 = df_t.reset_index(drop = True)
     df_t2.columns = [f'Rep{i+1}' for i in range(10)]
-    if module in ['fastai', 'NeuralNetwork']:
-        new_col = ['Amines and Polyamines', 'Amino Acids', 'Carbohydrates', 'Cofactors', 'Detoxification', 'Energy Metabolism', 'Fatty Acids and Lipids', 'Hormones', 'Inorganic Nutrients', 'Intermediate Metabolism', 'Nucleotides', 'Other', 'Redox', 'Specialized Metabolism']
-        df_t2.insert(0, 'Classification', new_col)
+    if module in ('fastai', 'NeuralNetwork'):
+        df_t2.insert(0, 'Classification', fixed_labels)
         pd.concat([df_t2, mean, std], axis=1).to_csv(Real_train_name, index=False)
     else:
         pd.concat([label, df_t2, mean, std], axis=1).to_csv(Real_train_name, index=False)
@@ -583,9 +560,8 @@ def Real_Score(module, gene_train_matrix_df, class_csr_matrix_df, best_model, tx
     test_df_t = test_df.T
     test_df_t2 = test_df_t.reset_index(drop=True)
     test_df_t2.columns = [f'Rep{i+1}' for i in range(10)]
-    if module in ['fastai', 'NeuralNetwork']:
-        new_col = ['Amines and Polyamines', 'Amino Acids', 'Carbohydrates', 'Cofactors', 'Detoxification', 'Energy Metabolism', 'Fatty Acids and Lipids', 'Hormones', 'Inorganic Nutrients', 'Intermediate Metabolism', 'Nucleotides', 'Other', 'Redox', 'Specialized Metabolism']
-        test_df_t2.insert(0, 'Classification', new_col)
+    if module in ('fastai', 'NeuralNetwork'):
+        test_df_t2.insert(0, 'Classification', fixed_labels)
         pd.concat([test_df_t2, mean, std], axis=1).to_csv(Real_test_name, index=False)
     else:
         pd.concat([test_label, test_df_t2, test_mean, test_std], axis=1).to_csv(Real_test_name, index=False)
@@ -602,10 +578,7 @@ def Real_Score(module, gene_train_matrix_df, class_csr_matrix_df, best_model, tx
         test_dl = best_model.dls.test_dl(unknown_exp_df)
         pred_probs, _ = best_model.get_preds(dl=test_dl)
         unknown_pred_bin = (pred_probs.numpy() > 0.2).astype(int)
-        unknown_pred_1 = pd.DataFrame(
-            unknown_pred_bin, 
-            columns=list(mlb.classes_)
-        )
+        unknown_pred_1 = pd.DataFrame(unknown_pred_bin, columns=fixed_labels)
     elif module == 'NeuralNetwork':
         unknown_exp_df = unknown_gene_exp.iloc[:, 1:].values.astype(np.float32)
         unknown_dataset = GeneExpressionDataset(unknown_exp_df, np.zeros((unknown_exp_df.shape[0], len(gene_train_multilabel.columns) - 1)))
@@ -617,7 +590,7 @@ def Real_Score(module, gene_train_matrix_df, class_csr_matrix_df, best_model, tx
                 outputs = best_model(X_batch)
                 preds = (outputs.cpu().numpy() > 0.2).astype(int)
                 all_preds.append(preds)
-        unknown_pred_1 = pd.DataFrame(np.vstack(all_preds), columns=list(mlb.classes_))
+        unknown_pred_1 = pd.DataFrame(np.vstack(all_preds), columns=fixed_labels)
     unknown_row_name = unknown_gene_exp['Gene']
     unknown_pred_label = module + "_Unknown_Predict_label_" + txt
     pd.concat([unknown_row_name, unknown_pred_1], axis=1).to_csv(unknown_pred_label, index=False)
@@ -631,6 +604,7 @@ def Real_Score(module, gene_train_matrix_df, class_csr_matrix_df, best_model, tx
     unknown_pred_class.to_csv(unknown_pred_name, index = False)
 
 def Bg_value(module, gene_train_matrix_df, gene_test_matrix_df, class_csr_matrix_df, best_model, txt, train_label, test_label):
+    fixed_labels = class_csr_matrix_df.columns[1:].tolist()
     train_Bg = []
     test_Bg = []
     global_train_bg = []
@@ -693,40 +667,33 @@ def Bg_value(module, gene_train_matrix_df, gene_test_matrix_df, class_csr_matrix
             global_test_scores = f1_score(y_test, test_pred, average="macro")
             global_test_bg.append(global_test_scores)
         elif module == 'fastai':
-            train_df = pd.concat([X_train, train_label], axis=1)
-            last_column = train_df.pop(train_df.columns[-2]) 
-            train_df.insert(0, 'Gene', last_column)
-            test_df = pd.merge(gene_test_matrix_df, test_label, on='Gene', how='left')
-            train_label['Classification'] = train_label['Classification'].astype(str).apply(lambda x: ','.join([i.strip() for i in x.split(',')]))
+            gene_train_labels = pd.merge(gene_train_df[['Gene']], class_csr_matrix_df, on='Gene', how='left')
+            gene_train_bin = gene_train_labels[fixed_labels].astype(int)
             kf = KFold(n_splits=5, shuffle=True, random_state=42)
-            folds = list(kf.split(train_label))
+            folds = list(kf.split(gene_train_df))
             train_idx, val_idx = folds[0]
-            train_genes = train_label.iloc[train_idx]['Gene'].values
-            val_genes = train_label.iloc[val_idx]['Gene'].values
-            train_df = train_df.drop(columns=['Classification'])
-            train_df = train_df.set_index('Gene')
-            train1_df = train_df.loc[train_genes]
-            val1_df = train_df.loc[val_genes]
-            gene_train1 = train_label[train_label['Gene'].isin(train_genes)].reset_index(drop=True)
-            gene_val = train_label[train_label['Gene'].isin(val_genes)].reset_index(drop=True)
-            train1_df = pd.merge(train1_df.reset_index(), gene_train1, on='Gene', how='left')
-            valid_df = pd.merge(val1_df.reset_index(), gene_val, on='Gene', how='left')
-            best_model = model_on.fastai_model(train1_df, valid_df)
+            train1_df = pd.concat([
+                gene_train_df.iloc[train_idx].reset_index(drop=True),
+                gene_train_bin.iloc[train_idx].reset_index(drop=True)
+            ], axis=1)
+            valid_df = pd.concat([
+                gene_train_df.iloc[val_idx].reset_index(drop=True),
+                gene_train_bin.iloc[val_idx].reset_index(drop=True)
+            ], axis=1)
+            best_model = model_on.fastai_model(train1_df, valid_df, fixed_labels)
             dls = best_model.dls
             train_preds, train_targets = best_model.get_preds(dl=dls.train)
             y_train_pred_bin = (train_preds.numpy() > 0.2).astype(int)
             y_train_true = train_targets.numpy()
             train_f1_overall = f1_score(y_train_true, y_train_pred_bin, average='macro')
             train_f1_per_label = f1_score(y_train_true, y_train_pred_bin, average=None)
-            test_df = test_df.drop(columns=['Classification'])
-            test_df = test_df.set_index('Gene')
-            dl_test = best_model.dls.test_dl(test_df.reset_index())
-            preds, _ = best_model.get_preds(dl=dl_test)           
+            gene_test_labels = pd.merge(gene_test_matrix_df[['Gene']], class_csr_matrix_df, on='Gene', how='left')
+            test_bin = gene_test_labels[fixed_labels].astype(int)
+            test_features = gene_test_matrix_df.drop(columns=['Gene']).reset_index(drop=True)
+            dl_test = best_model.dls.test_dl(test_features)
+            preds, _ = best_model.get_preds(dl=dl_test)
             y_pred = (preds.numpy() > 0.2).astype(int)
-            true_labels_df = test_label[['Gene', 'Classification']]
-            true_labels_df['Classification'] = true_labels_df['Classification'].astype(str).apply(lambda x: ','.join([i.strip() for i in x.split(',')]))
-            mlb = MultiLabelBinarizer()
-            y_true = mlb.fit_transform(true_labels_df['Classification'].apply(lambda x: x.split(',')))
+            y_true = test_bin.values.astype(int)
             test_f1_overall = f1_score(y_true, y_pred, average='macro')
             test_f1_per_label = f1_score(y_true, y_pred, average=None)
             train_Bg.append(train_f1_per_label)
@@ -734,37 +701,21 @@ def Bg_value(module, gene_train_matrix_df, gene_test_matrix_df, class_csr_matrix
             test_Bg.append(test_f1_per_label)
             global_test_bg.append(test_f1_overall)
         elif module == 'NeuralNetwork':
-            train_df = pd.concat([train_label, X_train], axis=1)
-            train_df = train_df.set_index('Gene')
-            train_df['Classification'] = train_df['Classification'].astype(str).apply(lambda x: ','.join([i.strip() for i in x.split(',')]))
+            gene_train_labels = pd.merge(gene_train_df[['Gene']], class_csr_matrix_df, on='Gene', how='left')
+            y_train_matrix = gene_train_labels[fixed_labels].values.astype(np.float32)
+            X_train_nn = gene_train_df.drop(columns=['Gene']).values.astype(np.float32)
             kf = KFold(n_splits=5, shuffle=True, random_state=42)
-            folds = list(kf.split(train_df))
+            folds = list(kf.split(X_train_nn))
             train_idx, val_idx = folds[0]
-            train_genes = train_label.iloc[train_idx]['Gene'].values
-            val_genes = train_label.iloc[val_idx]['Gene'].values
-            train_df = train_df.drop(columns=['Classification'])
-            #train_df = train_df.set_index('Gene')
-            train1_df = train_df.loc[train_genes]
-            val1_df = train_df.loc[val_genes]
-            gene_train1 = train_label[train_label['Gene'].isin(train_genes)].reset_index(drop=True)
-            gene_val = train_label[train_label['Gene'].isin(val_genes)].reset_index(drop=True)
-            train1_df = pd.merge(train1_df.reset_index(), gene_train1, on='Gene', how='left')
-            valid_df = pd.merge(val1_df.reset_index(), gene_val, on='Gene', how='left')
-            best_model = model_on.NN_model(train1_df, valid_df, gene_train1, gene_val)
+            X_tr = X_train_nn[train_idx]
+            y_tr = y_train_matrix[train_idx]
+            X_va = X_train_nn[val_idx]
+            y_va = y_train_matrix[val_idx]
+            best_model = model_on.NN_model(X_tr, y_tr, X_va, y_va)
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             threshold = 0.2
-            mlb = MultiLabelBinarizer()
-            train_label['Classification'] = train_label['Classification'].apply(lambda x: x.split(',') if isinstance(x, str) else x)
-            test_label['Classification'] = test_label['Classification'].apply(lambda x: x.split(',') if isinstance(x, str) else x)
-            y_train_matrix = mlb.fit_transform(train_label['Classification'])
-            y_test_matrix = mlb.transform(test_label['Classification'])
-            X_train = X_train.values.astype(np.float32)
-            X_test = gene_test_matrix_df.drop(columns=['Gene']).values.astype(np.float32)
-            train_dataset = GeneExpressionDataset(X_train, y_train_matrix)
-            test_dataset = GeneExpressionDataset(X_test, y_test_matrix)
+            train_dataset = GeneExpressionDataset(X_train_nn, y_train_matrix)
             train_loader = DataLoader(train_dataset, batch_size=64, shuffle=False)
-            test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
-
             best_model.eval()
             train_preds, train_targets = [], []
             with torch.no_grad():
@@ -781,6 +732,11 @@ def Bg_value(module, gene_train_matrix_df, gene_test_matrix_df, class_csr_matrix
             global_train_bg.append(train_f1_overall)
             train_Bg.append(train_f1_per_label)
 
+            gene_test_labels = pd.merge(gene_test_matrix_df[['Gene']], class_csr_matrix_df, on='Gene', how='left')
+            y_test_matrix = gene_test_labels[fixed_labels].values.astype(np.float32)
+            X_test = gene_test_matrix_df.drop(columns=['Gene']).values.astype(np.float32)
+            test_dataset = GeneExpressionDataset(X_test, y_test_matrix)
+            test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
             test_preds, test_targets = [], []
             with torch.no_grad():
                 for X_batch, y_batch in test_loader:
@@ -795,24 +751,18 @@ def Bg_value(module, gene_train_matrix_df, gene_test_matrix_df, class_csr_matrix
             test_f1_per_label = f1_score(test_targets, test_preds, average=None)
             global_test_bg.append(test_f1_overall)
             test_Bg.append(test_f1_per_label)
-                
-        model_filename =os.path.join(save_folder, f'Bg_model_{i+1}.pkl') # save random simulation models
+
+        model_filename = os.path.join(save_folder, f'Bg_model_{i+1}.pkl')
         joblib.dump(best_model, model_filename)
 
     train_Bg_df = pd.DataFrame(train_Bg)
-    train_Bg_df.columns = list(gene_train_multilabel)[1:]
-    if module in ['fastai', 'NeuralNetwork']:
-        new_col =  ['Amines and Polyamines', 'Amino Acids', 'Carbohydrates', 'Cofactors', 'Detoxification', 'Energy Metabolism', 'Fatty Acids and Lipids', 'Hormones', 'Inorganic Nutrients', 'Intermediate Metabolism', 'Nucleotides', 'Other', 'Redox', 'Specialized Metabolism']
-        train_Bg_df.columns = new_col
+    train_Bg_df.columns = fixed_labels
     train_Bg_df.to_csv(trian_bg_name, index=False)
     overall_bg_train_df = pd.DataFrame(global_train_bg, columns=["Global_F1_Score"])
     overall_bg_train_df.to_csv(Global_Bg_train, index = False)
 
     test_Bg_df = pd.DataFrame(test_Bg)
-    test_Bg_df.columns = list(gene_test_multilabel)[1:]
-    if module in ['fastai', 'NeuralNetwork']:
-        new_col =  ['Amines and Polyamines', 'Amino Acids', 'Carbohydrates', 'Cofactors', 'Detoxification', 'Energy Metabolism', 'Fatty Acids and Lipids', 'Hormones', 'Inorganic Nutrients', 'Intermediate Metabolism', 'Nucleotides', 'Other', 'Redox', 'Specialized Metabolism']
-        test_Bg_df.columns = new_col
+    test_Bg_df.columns = fixed_labels
     test_Bg_df.to_csv(test_bg_name, index=False)
     overall_bg_test_df = pd.DataFrame(global_test_bg, columns=["Global_F1_Score"])
     overall_bg_test_df.to_csv(Global_Bg_test, index = False)
@@ -847,33 +797,16 @@ def F1score_Calculate(gene_class_df, txt, AnyData, raw_name, raw_test, unknown_n
     test_label = gene_test
     unknown_gene_exp = pd.read_csv(unknown_name)
     gene_train_matrix_df = pd.merge(gene_train.loc[:, 'Gene'], Exp_gene_TPM_df, left_on="Gene", right_on="Gene", how="left")
-    gene_train_multilabel = pd.merge(gene_train_matrix_df.loc[:, 'Gene'], class_csr_matrix_df, left_on="Gene", right_on="Gene", how="left")
-    input_gene_train_multilabel = np.array(gene_train_multilabel[[x for x in list(gene_train_multilabel)[1:]]] == 1)
     gene_test_matrix_df = pd.merge(gene_test.loc[:,'Gene'], Exp_gene_TPM_df, on="Gene", how="left")
-    train_df = pd.merge(gene_train_matrix_df, gene_train, on="Gene", how="left")
-    test_df = pd.merge(gene_test_matrix_df, gene_test, on="Gene", how="left")
 
     Path = os.getcwd()
     Out_path = Path + "/Result_All"
     if not os.path.exists(Out_path):
         os.mkdir(Out_path)
     os.chdir(Out_path)
-    X_train, y_train = gene_train_matrix_df.iloc[:, 1:], input_gene_train_multilabel
+    X_train = gene_train_matrix_df.iloc[:, 1:]
+    y_train = np.array(pd.merge(gene_train_matrix_df.loc[:, 'Gene'], class_csr_matrix_df, on='Gene', how='left').iloc[:, 1:] == 1)
     model_on = model_selection(matrix_df = gene_train_matrix_df, txt = txt)
-    gene_train['Classification'] = gene_train['Classification'].astype(str).apply(lambda x: ','.join([i.strip() for i in x.split(',')]))
-    kf = KFold(n_splits=5, shuffle=True, random_state=42)
-    folds = list(kf.split(gene_train))
-    train_idx, val_idx = folds[0]
-    train_genes = gene_train.iloc[train_idx]['Gene'].values
-    val_genes = gene_train.iloc[val_idx]['Gene'].values
-    train_df = train_df.drop(columns=['Classification'])
-    train_df = train_df.set_index('Gene')
-    train1_df = train_df.loc[train_genes]
-    val1_df = train_df.loc[val_genes]
-    gene_train1 = gene_train[gene_train['Gene'].isin(train_genes)].reset_index(drop=True)
-    gene_val = gene_train[gene_train['Gene'].isin(val_genes)].reset_index(drop=True)
-    train1_df = pd.merge(train1_df.reset_index(), gene_train1, on='Gene', how='left')
-    valid_df = pd.merge(val1_df.reset_index(), gene_val, on='Gene', how='left')
 
     if 'KNN' in txt:
         best_model = model_on.KNN_model(X_train, y_train)
@@ -927,7 +860,26 @@ def F1score_Calculate(gene_class_df, txt, AnyData, raw_name, raw_test, unknown_n
         R_density_plot_overall_test = "Rscript Overall_F1_density_plot.R" + " " + Global_Bg_test + " " + Global_real_test + " " + Global_outPut_test
         os.system(R_density_plot_overall_test)
     if 'fastai' in txt:
-        best_model = model_on.fastai_model(train1_df, valid_df)
+        gene_train = gene_train.copy()
+        gene_train['Classification'] = gene_train['Classification'].astype(str).apply(lambda x: ','.join([i.strip() for i in x.split(',')]))
+        gene_train_labels = pd.merge(gene_train_matrix_df[['Gene']], class_csr_matrix_df, on='Gene', how='left')
+        fixed_labels = class_csr_matrix_df.columns[1:].tolist()
+        gene_train_bin = gene_train_labels[fixed_labels].astype(int)
+
+        kf = KFold(n_splits=5, shuffle=True, random_state=42)
+        folds = list(kf.split(gene_train_matrix_df))
+        train_idx, val_idx = folds[0]
+
+        train1_df = pd.concat([
+            gene_train_matrix_df.iloc[train_idx].reset_index(drop=True),
+            gene_train_bin.iloc[train_idx].reset_index(drop=True)
+        ], axis=1)
+        valid_df = pd.concat([
+            gene_train_matrix_df.iloc[val_idx].reset_index(drop=True),
+            gene_train_bin.iloc[val_idx].reset_index(drop=True)
+        ], axis=1)
+
+        best_model = model_on.fastai_model(train1_df, valid_df, fixed_labels)
         Real_Score('fastai', gene_train_matrix_df, class_csr_matrix_df, best_model, txt, gene_test_matrix_df, train_label, test_label, unknown_gene_exp)
         Bg_value('fastai', gene_train_matrix_df, gene_test_matrix_df, class_csr_matrix_df, best_model, txt, train_label, test_label)
         Real_name = "fastai_Real_Score_train_" + txt
@@ -951,7 +903,18 @@ def F1score_Calculate(gene_class_df, txt, AnyData, raw_name, raw_test, unknown_n
         R_density_plot_overall_test = "Rscript Overall_F1_density_plot.R" + " " + Global_Bg_test + " " + Global_real_test + " " + Global_outPut_test
         os.system(R_density_plot_overall_test)
     if 'NeuralNetwork' in txt:
-        best_model = model_on.NN_model(train1_df, valid_df, gene_train1, gene_val)
+        fixed_labels = class_csr_matrix_df.columns[1:].tolist()
+        gene_train_labels = pd.merge(gene_train_matrix_df[['Gene']], class_csr_matrix_df, on='Gene', how='left')
+        y_train_matrix = gene_train_labels[fixed_labels].values.astype(np.float32)
+        X_train_nn = gene_train_matrix_df.drop(columns=['Gene']).values.astype(np.float32)
+        kf = KFold(n_splits=5, shuffle=True, random_state=42)
+        folds = list(kf.split(X_train_nn))
+        train_idx, val_idx = folds[0]
+        X_tr = X_train_nn[train_idx]
+        y_tr = y_train_matrix[train_idx]
+        X_va = X_train_nn[val_idx]
+        y_va = y_train_matrix[val_idx]
+        best_model = model_on.NN_model(X_tr, y_tr, X_va, y_va)
         Real_Score('NeuralNetwork', gene_train_matrix_df, class_csr_matrix_df, best_model, txt, gene_test_matrix_df, train_label, test_label, unknown_gene_exp)
         Bg_value('NeuralNetwork', gene_train_matrix_df, gene_test_matrix_df, class_csr_matrix_df, best_model, txt, train_label, test_label)
         Real_name = "NeuralNetwork_Real_Score_train_" + txt
