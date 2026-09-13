@@ -220,6 +220,54 @@ class GeneExpressionDataset(Dataset):
             torch.tensor(self.labels[idx], dtype=torch.float)
         )
 
+def _make_predict_func(module, feature_names):
+    if module in ('KNN', 'RandomForest', 'xgboost'):
+        def pf(model, X):
+            return model.predict(X)
+    elif module == 'fastai':
+        def pf(model, X):
+            X_df = pd.DataFrame(X, columns=feature_names) if isinstance(X, np.ndarray) else X
+            dl = model.dls.test_dl(X_df)
+            preds, _ = model.get_preds(dl=dl)
+            return (preds.numpy() > 0.2).astype(int)
+    elif module == 'NeuralNetwork':
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        def pf(model, X):
+            model.eval()
+            X_np = X if isinstance(X, np.ndarray) else X.values
+            X_t = torch.tensor(X_np, dtype=torch.float32).to(device)
+            with torch.no_grad():
+                out = model(X_t)
+            return (out.cpu().numpy() > 0.2).astype(int)
+    else:
+        raise ValueError(f"Unsupported module for permutation importance: {module}")
+    return pf
+
+def _permutation_importance_per_class(model, X, y, feature_names, label_names,
+                                    predict_func, n_repeats=3, random_state=42):
+    y_pred_orig = predict_func(model, X)
+    orig_f1 = f1_score(y, y_pred_orig, average=None)
+
+    if isinstance(X, pd.DataFrame):
+        X_np = X.values.copy()
+    else:
+        X_np = np.asarray(X).copy()
+
+    n_features = X_np.shape[1]
+    importance = np.zeros((n_features, len(label_names)))
+    rng = np.random.RandomState(random_state)
+
+    for feat_idx in range(n_features):
+        decreases = []
+        for _ in range(n_repeats):
+            X_perm = X_np.copy()
+            rng.shuffle(X_perm[:, feat_idx])
+            perm_f1 = f1_score(y, predict_func(model, X_perm), average=None)
+            decreases.append(orig_f1 - perm_f1)
+        importance[feat_idx, :] = np.mean(decreases, axis=0)
+
+    return pd.DataFrame(importance, index=feature_names, columns=label_names)
+
 class model_selection():
     def __init__(self, matrix_df, txt):
         self.matrix_df = matrix_df
@@ -358,6 +406,7 @@ def Real_Score(module, gene_train_matrix_df, class_csr_matrix_df, best_model, tx
     test_f1 = []
     global_train = []
     global_test = []
+    all_imp_dfs = []
     Real_train_name = module + "_Real_Score_train_" + txt
     Real_test_name = module + "_Real_Score_test_" + txt
     Global_train_name = module + "_Overall_Score_train_" + txt
@@ -377,6 +426,7 @@ def Real_Score(module, gene_train_matrix_df, class_csr_matrix_df, best_model, tx
         X_train, y_train = gene_train_df.iloc[:, 1:], input_gene_train_multilabel
 
         model_on = model_selection(matrix_df = gene_train_df, txt = txt)
+        feature_names = X_train.columns.tolist()
         if module == 'KNN':
             best_model = model_on.KNN_model(X_train, y_train)
             y_train_pred = cross_val_predict(best_model, X_train, y_train, cv=5)
@@ -518,6 +568,23 @@ def Real_Score(module, gene_train_matrix_df, class_csr_matrix_df, best_model, tx
             global_test.append(test_f1_overall)
             test_f1.append(test_f1_per_label)
 
+        try:
+            predict_func = _make_predict_func(module, feature_names)
+            imp_df = _permutation_importance_per_class(
+                model=best_model,
+                X=X_train,
+                y=y_train,
+                feature_names=feature_names,
+                label_names=fixed_labels,
+                predict_func=predict_func,
+                n_repeats=3,
+                random_state=i
+            )
+            all_imp_dfs.append(imp_df)
+            print(f"[{module}] importance computed for model {i+1}/10")
+        except Exception as e:
+            print(f"[{module}] feature importance failed for model {i+1}: {e}")
+
         # save models
         model_filename =os.path.join(save_folder, f'model_{i+1}.pkl')
         joblib.dump(best_model, model_filename)
@@ -531,6 +598,13 @@ def Real_Score(module, gene_train_matrix_df, class_csr_matrix_df, best_model, tx
             })  
             importance_name = "feature_importance_" + module +f"_{i+1}.csv"
             importance_df.to_csv(importance_name, index=False)
+
+    if all_imp_dfs:
+        concat_df = pd.concat(all_imp_dfs, axis=0, keys=range(len(all_imp_dfs)))
+        mean_imp_df = concat_df.groupby(level=1).mean()
+        mean_imp_name = module + "_Feature_Importance_Mean_" + txt
+        mean_imp_df.to_csv(mean_imp_name)
+        print(f"[{module}] Feature importance (mean) saved to {mean_imp_name}")
 
     df = pd.DataFrame(out)
     label = pd.DataFrame(list(gene_train_multilabel)[1:])
