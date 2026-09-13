@@ -15,14 +15,13 @@ Refervalue <- read.csv(GeneType, header=TRUE, sep=",")
 value <- read.csv(value, header = T)
 
 cols <- colnames(Refervalue)[1:14]
-zscore_list <- c()
 pvalue_list <- c()
+num <- nrow(Refervalue)
 for (i in 1:length(cols)) {
-  zscore <- data.frame(value$Refervalue[i]-mean(Refervalue[[cols[i]]]))/sd(Refervalue[[cols[i]]])
-  zscore_list <- c(zscore_list, round(zscore[[1]],3))
-  if(zscore_list[i] > 0)  { pvalue <- pnorm(q = zscore_list[i],lower.tail = FALSE) }else{
-    pvalue <- pnorm(q = zscore[[1]],lower.tail = TRUE)}
-  pvalue_list <- c(pvalue_list, format(pvalue, scientific = TRUE, digits = 3))
+  count_gt <- sum(Refervalue[[cols[i]]] >= value$Mean[i], na.rm = TRUE)
+  p_val <- (count_gt + 1) / (num + 1)
+  pvalue_list <- c(pvalue_list, format(p_val, scientific = TRUE, digits = 3))
+
   p <- paste0('p', cols[i])
   den <- density(Refervalue[[cols[i]]])
   Max<-max(den$y)*0.75
@@ -35,7 +34,6 @@ for (i in 1:length(cols)) {
     theme_bw() + 
     theme(panel.grid = element_blank()) +
     xlim(0, x_lim) +
-    annotate("text", x = x_lim*0.9, y = Max, label = format(paste0("z=", zscore_list[i])), size = 3, col = "black") +
     annotate("text", x = x_lim*0.9, y = Max*0.8, label = format(paste0("p=", pvalue_list[i])), size = 3, col = "black")
   assign(p, data_change)
 }

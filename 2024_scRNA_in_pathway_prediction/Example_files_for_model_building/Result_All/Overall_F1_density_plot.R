@@ -16,11 +16,10 @@ value <- read.csv(value, header = T)
 
 Mean <- mean(value$Global_F1_Score)
 SD <- sd(value$Global_F1_Score)
-if(mean(Refervalue[[1]]) == 0)  { zscore <- 0}else{zscore <- (Mean-mean(Refervalue[[1]]))/sd(Refervalue[[1]])}
-if(zscore > 0)  { pvalue <- pnorm(q = zscore, lower.tail = FALSE) }else{
-  pvalue <- pnorm(q = zscore, lower.tail = TRUE)}
-zscore_value <- round(zscore,3)
-pval <- format(pvalue, scientific = TRUE, digits = 3)
+num <- nrow(Refervalue)
+count_gt <- sum(Refervalue[[1]] > Mean, na.rm = TRUE)
+p_val <- (count_gt + 1) / (num + 1)
+pval <- format(p_val, scientific = TRUE, digits = 3)
 
 den <- density(Refervalue[[1]])
 Max<-max(den$y)*1.1
@@ -37,7 +36,6 @@ data_change <- ggplot(Refervalue, aes(x = Refervalue[[1]])) +
   theme(panel.grid = element_blank()) +
   xlim(0, x_lim) +
   ylim(0, Max)+
-  annotate("text", x = x_lim*0.9, y = Max, label = format(paste0("z=", zscore_value)), size = 3, col = "black") +
   annotate("text", x = x_lim*0.9, y = Max*0.8, label = format(paste0("p=", pval)), size = 3, col = "black")
 
 p1 <- data_change

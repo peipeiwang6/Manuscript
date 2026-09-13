@@ -15,17 +15,15 @@ Refervalue <- read.csv(GeneType, header=TRUE, sep=",")
 value <- read.csv(value, header = T)
 
 cols <- colnames(Refervalue)[1:14]
-zscore_list <- c()
 pvalue_list <- c()
+num <- length(Refervalue)
 for (i in 1:length(cols)) {
-  zscore <- data.frame(value$Refervalue[i]-mean(Refervalue[[cols[i]]]))/sd(Refervalue[[cols[i]]])
-  zscore_list <- c(zscore_list, round(zscore[[1]],3))
-  if(zscore_list[i] > 0)  { pvalue <- pnorm(q = zscore_list[i],lower.tail = FALSE) }else{
-    pvalue <- pnorm(q = zscore[[1]],lower.tail = TRUE)}
-  pvalue_list <- c(pvalue_list, format(pvalue, scientific = TRUE, digits = 3))
+  count_gt <- sum(Refervalue[[cols[i]]] >= value$Refervalue[i], na.rm = TRUE)
+  p <- (count_gt + 1) / (num + 1)
+  pvalue_list <- c(pvalue_list, format(p, scientific = TRUE, digits = 3))
   p <- paste0('p', cols[i])
   den <- density(Refervalue[[cols[i]]])
-  Max<-max(den$y)*0.75
+  Max<-max(den$y)*1.1
   x_lim = max(value$Refervalue*1.3)
   data_change <- ggplot(Refervalue, aes(x = !!sym(cols[i]))) + 
     geom_density(color = "#69b3a2", lwd = 0.6, linetype = 1, fill="#69b3a2", adjust=1.75, alpha=0.5) +
@@ -35,7 +33,6 @@ for (i in 1:length(cols)) {
     theme_bw() + 
     theme(panel.grid = element_blank()) +
     xlim(0, x_lim) +
-    annotate("text", x = x_lim*0.9, y = Max, label = format(paste0("z=", zscore_list[i])), size = 3, col = "black") +
     annotate("text", x = x_lim*0.9, y = Max*0.8, label = format(paste0("p=", pvalue_list[i])), size = 3, col = "black")
   assign(p, data_change)
 }
