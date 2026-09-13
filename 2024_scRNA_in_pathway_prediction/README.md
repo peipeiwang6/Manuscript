@@ -28,7 +28,7 @@ The [/Model_building](https://github.com/peipeiwang6/Manuscript/tree/main/2024_s
     - `fastai_expression_matrix.csv`
     - `NeuralNetwork_expression_matrix.csv`    
     - `KNN_expression_matrix.csv`
-    - `XGBoost_expression_matrix.csv`
+    - `xgboost_expression_matrix.csv`
     - `RandomForest_expression_matrix.csv`
 
 * Gene classification: contains two columns: one for genes and another for their classification information. The first column should match the **"Gene"** column in the expression matrix, and the second column must be named **"Classification"**. 
